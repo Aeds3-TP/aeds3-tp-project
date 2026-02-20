@@ -10,10 +10,11 @@ Objetivo:
 * Rafael Portilho de Andrade 
 * Bernardo Barbosa Heronvile
 * Gabriel Assis Carvalho Lacerda
-* Pedro Lopes 
+* Pedro Henrique Lopes De Melo
 
 ## Professor responsáveL
 
 * Walisson Ferreira de Carvalho
 
 ## Instruções de utilização
+
