@@ -24,6 +24,9 @@ public class Aplicacao {
         
         // -- Rotas que todo mundo consegue utilizar até não estando logado --
         post("/login", (req, res) -> new AuthService().login(req, res)); //Login
+        
+        post("/logout", (req, res) -> new AuthService().logout(req, res)); // Deslogar
+        
         post("/usuario", (req, res) -> new UsuarioService().insert(req, res)); // Criar conta
 
         

@@ -38,6 +38,18 @@ public class AuthService {
         res.status(401);
         return "{\"erro\": \"Login invalido\"}";
     }
+    
+    // log out
+    public Object logout(Request req, Response res) {
+        // A função removeCookie diz ao navegador para deletar o cookie 'auth_token'
+        res.removeCookie("auth_token");
+        
+        // Alternativa manual (caso o navegador seja teimoso):
+        // res.cookie("auth_token", "", 0, false, true); 
+
+        res.status(200);
+        return "{\"msg\": \"Deslogado com sucesso\"}";
+    }
 
     // -- Pega o token no cookie do navegar e verifica a role/permissão do usuario --
     public static void verificarPermissao(Request req, Role... rolesPermitidos) {
