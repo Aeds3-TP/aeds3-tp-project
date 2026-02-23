@@ -39,9 +39,24 @@ public class Aplicacao {
                     case 2: 
                         System.out.println("Digite o id do usuario que deseja atualizar!");
                         int UpdId = sc.nextInt();
+                        sc.nextLine();
                         Usuario atualizar = usuarioDAO.get(UpdId);
                         if(atualizar != null) {
-
+                            System.out.println("Dados atuais - Nome: " + atualizar.getNome() + " | Email: " + atualizar.getEmail());
+                            System.out.println("Digite o novo nome:");
+                            atualizar.setNome(sc.nextLine()); 
+                            System.out.println("Digite o novo email:");
+                            atualizar.setEmail(sc.nextLine()); 
+                            System.out.println("Digite a nova Senha:");
+                            String newSenha = sc.nextLine();
+                            atualizar.setSenha(CriptoService.xor(newSenha));      
+                            try {
+                                if(usuarioDAO.update(atualizar)) System.out.println("Usuario de id: " + UpdId + " Atualizado com sucesso!");
+                                else System.out.println("Erro para salvar a alteracao!");
+                            } 
+                            catch(Exception e) { 
+                                e.printStackTrace(); 
+                            }
                         }
                         else {
                             System.out.println("Usuario nao encontrado!");
