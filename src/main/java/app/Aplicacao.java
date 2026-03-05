@@ -3,89 +3,92 @@ package app;
 import dao.*;
 import model.*;
 import service.*; 
-//import static spark.Spark.*;
+import static spark.Spark.*;
 
 import java.util.*;
 
 public class Aplicacao {
+	public static void menu() { //função de menu do crud ignore caso queira apenas olhar o funcionamento do site em si
+		 Scanner sc = new Scanner(System.in);
+	        UsuarioDAO usuarioDAO = new UsuarioDAO();
+	        int entrada = -1;
+	        while(entrada != 0) {
+	            System.out.println("1 - Continuar!\n0 - Sair!");
+	            entrada = sc.nextInt();
+	            sc.nextLine();
+	            if(entrada == 1) {
+	                System.out.println("1 - Adicionar\n2 - Atualizar\n3 - Remover\n4 - Mostrar\n0 - Sair");
+	                int entrada2 = sc.nextInt();
+	                sc.nextLine();
+	                switch(entrada2) {
+	                    case 1:
+	                        System.out.println("Digite o login!"); String login = sc.nextLine();
+	                        System.out.println("Digite o nome!"); String nome = sc.nextLine();
+	                        System.out.println("Digite o senha!"); String senha = sc.nextLine();
+	                        System.out.println("Digite o email!"); String email = sc.nextLine();
+	                        String senhaCripto = CriptoService.xor(senha);
+	                        Usuario newUsuario = new Usuario(login, senhaCripto, nome, email, Role.USUARIO);
+	                        try {
+	                            int id = usuarioDAO.insert(newUsuario);
+	                            System.out.println("Usuario de id: " + id + " adicionado!");
+	                        }
+	                        catch(Exception e) {
+	                            System.out.println("Erro para adicionar usuario");
+	                        }                      
+	                        break;
+	                    case 2: 
+	                        System.out.println("Digite o id do usuario que deseja atualizar!");
+	                        int UpdId = sc.nextInt();
+	                        sc.nextLine();
+	                        Usuario atualizar = usuarioDAO.get(UpdId);
+	                        if(atualizar != null) {
+	                            System.out.println("Dados atuais - Nome: " + atualizar.getNome() + " | Email: " + atualizar.getEmail());
+	                            System.out.println("Digite o novo nome:");
+	                            atualizar.setNome(sc.nextLine()); 
+	                            System.out.println("Digite o novo email:");
+	                            atualizar.setEmail(sc.nextLine()); 
+	                            System.out.println("Digite a nova Senha:");
+	                            String newSenha = sc.nextLine();
+	                            atualizar.setSenha(CriptoService.xor(newSenha));      
+	                            try {
+	                                if(usuarioDAO.update(atualizar)) System.out.println("Usuario de id: " + UpdId + " Atualizado com sucesso!");
+	                                else System.out.println("Erro para salvar a alteracao!");
+	                            } 
+	                            catch(Exception e) { 
+	                                e.printStackTrace(); 
+	                            }
+	                        }
+	                        else {
+	                            System.out.println("Usuario nao encontrado!");
+	                        }
+	                        break;
+	                    case 3:
+	                        System.out.println("Digite o id do usuario que deseja remover!");
+	                        int DelId = sc.nextInt();
+	                        if(usuarioDAO.delete(DelId)) {
+	                            System.out.println("Usuario deletado com sucesso!");
+	                        }
+	                        else {
+	                            System.out.println("Usuario nao encontrado!");
+	                        }
+	                        break;
+	                    case 4:
+	                        List<Usuario> lista = usuarioDAO.getAll(); 
+	                        for (Usuario u : lista) {
+	                            System.out.println("ID: " + u.getId() + " | Nome: " + u.getNome() + " | Login: " + u.getLogin());
+	                        }
+	                        break;
+	                    default:
+	                        break;
+	                }
+	            }
+	        }    
+	        System.out.println("Saindo do programa!");
+	        sc.close();
+	}
     public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        UsuarioDAO usuarioDAO = new UsuarioDAO();
-        int entrada = -1;
-        while(entrada != 0) {
-            System.out.println("1 - Continuar!\n0 - Sair!");
-            entrada = sc.nextInt();
-            sc.nextLine();
-            if(entrada == 1) {
-                System.out.println("1 - Adicionar\n2 - Atualizar\n3 - Remover\n4 - Mostrar\n0 - Sair");
-                int entrada2 = sc.nextInt();
-                sc.nextLine();
-                switch(entrada2) {
-                    case 1:
-                        System.out.println("Digite o login!"); String login = sc.nextLine();
-                        System.out.println("Digite o nome!"); String nome = sc.nextLine();
-                        System.out.println("Digite o senha!"); String senha = sc.nextLine();
-                        System.out.println("Digite o email!"); String email = sc.nextLine();
-                        String senhaCripto = CriptoService.xor(senha);
-                        Usuario newUsuario = new Usuario(login, senhaCripto, nome, email, Role.USUARIO);
-                        try {
-                            int id = usuarioDAO.insert(newUsuario);
-                            System.out.println("Usuario de id: " + id + " adicionado!");
-                        }
-                        catch(Exception e) {
-                            System.out.println("Erro para adicionar usuario");
-                        }                      
-                        break;
-                    case 2: 
-                        System.out.println("Digite o id do usuario que deseja atualizar!");
-                        int UpdId = sc.nextInt();
-                        sc.nextLine();
-                        Usuario atualizar = usuarioDAO.get(UpdId);
-                        if(atualizar != null) {
-                            System.out.println("Dados atuais - Nome: " + atualizar.getNome() + " | Email: " + atualizar.getEmail());
-                            System.out.println("Digite o novo nome:");
-                            atualizar.setNome(sc.nextLine()); 
-                            System.out.println("Digite o novo email:");
-                            atualizar.setEmail(sc.nextLine()); 
-                            System.out.println("Digite a nova Senha:");
-                            String newSenha = sc.nextLine();
-                            atualizar.setSenha(CriptoService.xor(newSenha));      
-                            try {
-                                if(usuarioDAO.update(atualizar)) System.out.println("Usuario de id: " + UpdId + " Atualizado com sucesso!");
-                                else System.out.println("Erro para salvar a alteracao!");
-                            } 
-                            catch(Exception e) { 
-                                e.printStackTrace(); 
-                            }
-                        }
-                        else {
-                            System.out.println("Usuario nao encontrado!");
-                        }
-                        break;
-                    case 3:
-                        System.out.println("Digite o id do usuario que deseja remover!");
-                        int DelId = sc.nextInt();
-                        if(usuarioDAO.delete(DelId)) {
-                            System.out.println("Usuario deletado com sucesso!");
-                        }
-                        else {
-                            System.out.println("Usuario nao encontrado!");
-                        }
-                        break;
-                    case 4:
-                        List<Usuario> lista = usuarioDAO.getAll(); 
-                        for (Usuario u : lista) {
-                            System.out.println("ID: " + u.getId() + " | Nome: " + u.getNome() + " | Login: " + u.getLogin());
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-        }    
-        System.out.println("Saindo do programa!");
-        sc.close();
-        /*port(3000);
+       
+        port(3000);
         staticFiles.location("/public");
         
         // Configuração de CORS (Basicamente configuracao do navegador isso n importa muito)
@@ -143,6 +146,5 @@ public class Aplicacao {
             });
             
         });
-        */
     }
 }
