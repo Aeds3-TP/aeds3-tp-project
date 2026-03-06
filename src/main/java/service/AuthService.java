@@ -73,7 +73,10 @@ public class AuthService {
 
             if (!permitido) spark.Spark.halt(403, "{\"erro\": \"Acesso Negado para seu perfil\"}");
 
-        } catch (Exception e) {
+        } catch (spark.HaltException e) {
+            throw e; 
+            
+        }catch (Exception e) {
             spark.Spark.halt(401, "{\"erro\": \"Token invalido\"}");
         }
     }

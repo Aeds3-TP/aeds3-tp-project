@@ -26,7 +26,7 @@ public class UsuarioService extends BaseService<Usuario> {
         u.validar();
         
         // Todo novo cadastro público SEMPRE será de um CLIENTE (ou USUARIO).
-        u.setRole(Role.USUARIO);
+        //u.setRole(Role.USUARIO);
 
         // Validação do Service
         if (((UsuarioDAO) dao).getByLogin(u.getLogin()) != null) {

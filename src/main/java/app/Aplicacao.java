@@ -102,13 +102,27 @@ public class Aplicacao {
         before((req, res) -> res.header("Access-Control-Allow-Origin", "*"));
 
         
+        // INSTANCIANDO OS SERVICES AQUI EM CIMA PARA TODOS OS BLOCOS PODEREM USAR
+        UsuarioService usuarioService = new UsuarioService();
+        CategoriaService categoriaService = new CategoriaService();
+        ProdutoService produtoService = new ProdutoService();
+        
         
         // -- Rotas que todo mundo consegue utilizar até não estando logado --
-        post("/login", (req, res) -> new AuthService().login(req, res)); //Login
-        
+        post("/login", (req, res) -> new AuthService().login(req, res)); //Login  
         post("/logout", (req, res) -> new AuthService().logout(req, res)); // Deslogar
-        
         post("/usuario", (req, res) -> new UsuarioService().insert(req, res)); // Criar conta
+        
+        // LER PRODUTOS E CATEGORIAS (Fica aqui fora porque clientes não logados precisam ver a loja)
+        
+        get("/produtos", (req, res) -> produtoService.getAll(req, res));
+        get("/produtos/:id", (req, res) -> produtoService.get(req, res));
+        get("/produtos/categoria/:idCategoria", (req, res) -> produtoService.listarPorCategoria(req, res));
+        get("/produtos/preco/:preco", (req, res) -> produtoService.listarAtePreco(req, res));
+        
+        get("/categorias", (req, res) -> categoriaService.getAll(req, res));
+        get("/categorias/:id", (req, res) -> categoriaService.get(req, res));
+        get("/categorias/busca/:nome", (req, res) -> categoriaService.getPorNome(req, res));
 
         
         // -- Configuracao de como configurar os fetch, o que o adm acessa e o que o usuario comum acessa --
@@ -118,13 +132,14 @@ public class Aplicacao {
         // Area COMUM (Em todo fetch que seguir um caminho tipo esse, os usuarios comuns podem usar)
         before("/api/comum/*", (req, res) -> AuthService.verificarPermissao(req, Role.ADMIN, Role.GESTOR, Role.USUARIO));
 
+        // Area de GESTÃO (Apenas Admin e Gestor podem gerenciar o estoque)
+        before("/api/gestao/*", (req, res) -> AuthService.verificarPermissao(req, Role.ADMIN, Role.GESTOR));
         
         //Outros fetchs que apenas logado é possivel, e dependendo da role pode ou não pode
         path("/api", () -> {
             
             //Rotas de Admin (Gerenciar outros usuários)
-            path("/admin", () -> {
-                UsuarioService usuarioService = new UsuarioService();
+            path("/admin", () -> {             
 
                 get("/usuarios", (req, res) -> usuarioService.getAll(req, res));
                 get("/usuarios/busca/:login", (req, res) -> usuarioService.getPorLogin(req, res));
@@ -136,13 +151,25 @@ public class Aplicacao {
 
             // Rotas Comuns (Para o próprio usuário logado)
             path("/comum", () -> {
-                UsuarioService usuarioService = new UsuarioService();
 
                 // Rota Especial: BUSCAR os dados de QUEM ESTÁ LOGADO
                 get("/meus-dados", (req, res) -> usuarioService.getMe(req, res));
 
                 // Rota Especial: ATUALIZAR os dados de QUEM ESTÁ LOGADO
                 put("/meus-dados", (req, res) -> usuarioService.updateMe(req, res));
+            });
+            
+            // Rotas de Gestão (NOVO BLOCO: Gerenciar Produtos e Categorias)
+            path("/gestao", () -> {
+                // CRUD Categorias (Só Admin/Gestor pode alterar)
+                post("/categorias", (req, res) -> categoriaService.insert(req, res));
+                put("/categorias/:id", (req, res) -> categoriaService.update(req, res));
+                delete("/categorias/:id", (req, res) -> categoriaService.delete(req, res));
+
+                // CRUD Produtos (Só Admin/Gestor pode alterar)
+                post("/produtos", (req, res) -> produtoService.insert(req, res));
+                put("/produtos/:id", (req, res) -> produtoService.update(req, res));
+                delete("/produtos/:id", (req, res) -> produtoService.delete(req, res));
             });
             
         });
