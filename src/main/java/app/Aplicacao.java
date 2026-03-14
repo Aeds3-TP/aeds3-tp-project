@@ -190,13 +190,13 @@ public class Aplicacao {
 				delete("/favoritos/:id", (req, res) -> favoritoService.delete(req, res));    // Remove
 
 				// PEDIDOS (Carrinho e Histórico)
-				post("/pedidos", (req, res) -> pedidoService.insert(req, res));             // Cria a nota
-				get("/pedidos", (req, res) -> pedidoService.getMeusPedidos(req, res));      // Lista as minhas notas
-				get("/pedidos/:id", (req, res) -> pedidoService.get(req, res));             // Abre uma nota minha
+				post("/pedidos", (req, res) -> pedidoService.insert(req, res));             // Cria o pedido
+				get("/pedidos", (req, res) -> pedidoService.getMeusPedidos(req, res));      // Lista os meus pedidos
+				get("/pedidos/:id", (req, res) -> pedidoService.get(req, res));             // Abre um pedido meu
 
 				// ITENS DO PEDIDO
-				post("/itens-pedido", (req, res) -> itemPedidoService.insert(req, res));             // Coloca item na nota
-				get("/pedidos/:idPedido/itens", (req, res) -> itemPedidoService.getItensPedidoSeguro(req, res)); // Abre itens da nota
+				post("/itens-pedido", (req, res) -> itemPedidoService.insert(req, res));             // Coloca item no pedido
+				get("/pedidos/:idPedido/itens", (req, res) -> itemPedidoService.getItensPedidoSeguro(req, res)); // Abre itens do pedido
 				
 			});
 
