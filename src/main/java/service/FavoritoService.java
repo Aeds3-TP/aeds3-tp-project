@@ -1,12 +1,9 @@
 package service;
 
 import dao.FavoritoDAO;
-import dao.ItemPedidoDAO;
-import dao.PedidoDAO;
 import dao.ProdutoDAO;
 import dao.UsuarioDAO;
 import model.Favorito;
-import model.ItemPedido;
 import model.Produto;
 import model.Usuario;
 import spark.Request;
@@ -16,15 +13,9 @@ import java.util.List;
 
 public class FavoritoService extends BaseService<Favorito> {
 
-    private FavoritoDAO favoritoDAO;
-    private UsuarioDAO usuarioDAO;
 
     public FavoritoService() {
-        // Instancia o ProdutoDAO e manda lá pro BaseService cuidar do CRUD básico
         super(new FavoritoDAO());
-
-        this.favoritoDAO = new FavoritoDAO();
-        this.usuarioDAO = new UsuarioDAO();
     }
 
     @Override
@@ -32,307 +23,120 @@ public class FavoritoService extends BaseService<Favorito> {
         return Favorito.class;
     }
 
+    @Override
     protected void onBeforeInsert(Favorito obj) throws Exception {
         obj.validar();
+        
+        // Verifica se o produto que o cara quer favoritar realmente existe
+        ProdutoDAO produtoDAO = new ProdutoDAO();
+        Produto produto = produtoDAO.get(obj.getIdProduto());
+        if (produto == null) {
+            throw new Exception("Produto inexistente. Não é possível favoritar.");
+        }
+        
+        // Verifica se a pessoa já favoritou esse produto antes
+        FavoritoDAO favDao = (FavoritoDAO) this.dao;
+        if (favDao.isFavorito(obj.getIdUsuario(), obj.getIdProduto())) {
+            throw new Exception("Produto já está nos favoritos.");
+        }
     }
 
+    @Override
     protected void onBeforeUpdate(Favorito obj) throws Exception {
-        obj.validar();
+        throw new Exception("Ação não permitida. Para alterar, remova o favorito atual e crie um novo.");
     }
 
-    public Object adicionarFavoritoSeguro(Request req, Response res) {
-
+    @Override
+    public Object insert(Request req, Response res) {
         try {
-
-            // 1. Descobrir quem está logado
             String donoLogin = AuthService.getLoginFromToken(req);
-
             if (donoLogin == null) {
                 res.status(401);
                 return "{\"erro\": \"Sessão inválida.\"}";
             }
 
-            // 2. Buscar usuário no banco
+            UsuarioDAO usuarioDAO = new UsuarioDAO();
             Usuario usuario = usuarioDAO.getByLogin(donoLogin);
 
-            if (usuario == null) {
-                res.status(401);
-                return "{\"erro\": \"Usuário não encontrado.\"}";
-            }
-
-            // 3. Converter JSON para objeto Favorito
             Favorito favorito = gson.fromJson(req.body(), getModelClass());
+            
+            // FORÇA o idUsuario do favorito a ser o do cara que está logado (Segurança Máxima)
+            favorito.setIdUsuario(usuario.getId());
 
-            if (favorito == null) {
-                res.status(400);
-                return "{\"erro\": \"JSON inválido.\"}";
-            }
-
-            // 4. Verificar se o usuário do JSON é o mesmo do token
-            if (favorito.getIdUsuario() != usuario.getId()) {
-                res.status(403);
-                return "{\"erro\": \"Acesso negado: você não pode favoritar produtos para outro usuário.\"}";
-            }
-
-            // 5. Verificar se o produto existe
-            ProdutoDAO produtoDAO = new ProdutoDAO();
-            Produto produto = produtoDAO.get(favorito.getIdProduto());
-
-            if (produto == null) {
-                res.status(404);
-                return "{\"erro\": \"Produto não encontrado.\"}";
-            }
-
-            // 6. Verificar se já está nos favoritos
-            if (favoritoDAO.isFavorito(usuario.getId(), favorito.getIdProduto())) {
-                res.status(409);
-                return "{\"erro\": \"Produto já está nos favoritos.\"}";
-            }
-
-            // 7. Validar objeto
-            favorito.validar();
-
-            // 8. Inserir favorito
-            favoritoDAO.insert(favorito);
-
-            res.status(201);
-            return gson.toJson(favorito);
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-            res.status(500);
-            return "{\"erro\": \"Erro interno do servidor.\"}";
-        }
-    }
-
-    public Object insertSeguro(Request req, Response res) {
-
-        try {
-
-            // 1. Descobrir quem está logado
-            String donoLogin = AuthService.getLoginFromToken(req);
-
-            if (donoLogin == null) {
-                res.status(401);
-                return "{\"erro\": \"Sessão inválida.\"}";
-            }
-
-            // 2. Buscar usuário
-            Usuario usuario = usuarioDAO.getByLogin(donoLogin);
-
-            if (usuario == null) {
-                res.status(401);
-                return "{\"erro\": \"Usuário não encontrado.\"}";
-            }
-
-            // 3. Converter JSON
-            Favorito favorito = gson.fromJson(req.body(), getModelClass());
-
-            if (favorito == null) {
-                res.status(400);
-                return "{\"erro\": \"JSON inválido.\"}";
-            }
-
-            // 4. Garantir que o favorito pertence ao usuário logado
-            if (favorito.getIdUsuario() != usuario.getId()) {
-                res.status(403);
-                return "{\"erro\": \"Acesso negado.\"}";
-            }
-
-            // 5. Verificar duplicação
-            if (favoritoDAO.isFavorito(usuario.getId(), favorito.getIdProduto())) {
-                res.status(409);
-                return "{\"erro\": \"Produto já está nos favoritos.\"}";
-            }
-
-            // 6. Validar
             onBeforeInsert(favorito);
-
-            // 7. Inserir
-            favoritoDAO.insert(favorito);
+            this.dao.insert(favorito);
 
             res.status(201);
             return gson.toJson(favorito);
 
         } catch (Exception e) {
-            e.printStackTrace();
-            res.status(500);
-            return "{\"erro\": \"Erro interno do servidor.\"}";
+            res.status(400); // 400 = Bad Request (ex: já favoritou)
+            return "{\"erro\": \"" + e.getMessage() + "\"}";
         }
     }
 
-    public Object updateSeguro(Request req, Response res) {
-
+    @Override
+    public Object delete(Request req, Response res) {
         try {
-
-            // 1. Descobrir usuário logado
             String donoLogin = AuthService.getLoginFromToken(req);
-
             if (donoLogin == null) {
-                res.status(401);
-                return "{\"erro\": \"Sessão inválida.\"}";
+                res.status(401); return "{\"erro\": \"Sessão inválida.\"}";
             }
-
-            // 2. Buscar usuário
+            
+            UsuarioDAO usuarioDAO = new UsuarioDAO();
             Usuario usuario = usuarioDAO.getByLogin(donoLogin);
 
-            if (usuario == null) {
-                res.status(401);
-                return "{\"erro\": \"Usuário não encontrado.\"}";
-            }
-
-            // 3. Converter JSON
-            Favorito favorito = gson.fromJson(req.body(), getModelClass());
+            int idFavorito = Integer.parseInt(req.params(":id"));
+            Favorito favorito = this.dao.get(idFavorito);
 
             if (favorito == null) {
-                res.status(400);
-                return "{\"erro\": \"JSON inválido.\"}";
+                res.status(404); return "{\"erro\": \"Favorito não encontrado.\"}";
             }
 
-            // 4. Buscar favorito existente
-            Favorito favoritoExistente = favoritoDAO.get(favorito.getId());
-
-            if (favoritoExistente == null) {
-                res.status(404);
-                return "{\"erro\": \"Favorito não encontrado.\"}";
+            // A trava de segurança!
+            if (favorito.getIdUsuario() != usuario.getId()) {
+                res.status(403); return "{\"erro\": \"Acesso negado: você não pode remover favoritos de outro usuário.\"}";
             }
 
-            // 5. Verificar se pertence ao usuário logado
-            if (favoritoExistente.getIdUsuario() != usuario.getId()) {
-                res.status(403);
-                return "{\"erro\": \"Acesso negado: você não pode alterar favoritos de outro usuário.\"}";
+            this.dao.delete(idFavorito);
+            res.status(200);
+            return "{\"msg\": \"Favorito removido com sucesso.\"}";
+
+        } catch (Exception e) {
+            res.status(500); return "{\"erro\": \"Erro interno do servidor.\"}";
+        }
+    }
+    
+    // --- RELATÓRIO PARA A GESTÃO ---
+    public Object getFavoritosPorProduto(Request req, Response res) {
+        try {
+            int idProduto = Integer.parseInt(req.params(":idProduto"));
+            FavoritoDAO favDao = (FavoritoDAO) this.dao;
+            res.status(200);
+            return gson.toJson(favDao.getFavoritosByProduto(idProduto));
+        } catch (Exception e) {
+            res.status(500); return "{\"erro\": \"" + e.getMessage() + "\"}";
+        }
+    }
+
+    public Object getMeusFavoritos(Request req, Response res) {
+        try {
+            String donoLogin = AuthService.getLoginFromToken(req);
+            if (donoLogin == null) {
+                res.status(401); return "{\"erro\": \"Sessão inválida.\"}";
             }
 
-            // 6. Validar
-            onBeforeUpdate(favorito);
+            UsuarioDAO userDAO = new UsuarioDAO();
+            Usuario u = userDAO.getByLogin(donoLogin);
 
-            // 7. Atualizar
-            favoritoDAO.update(favorito);
+            FavoritoDAO favDao = (FavoritoDAO) this.dao;
+            List<Favorito> meusFavoritos = favDao.getFavoritosByUsuario(u.getId());
 
             res.status(200);
-            return gson.toJson(favorito);
+            return gson.toJson(meusFavoritos);
 
         } catch (Exception e) {
-
-            e.printStackTrace();
-            res.status(500);
-            return "{\"erro\": \"Erro interno do servidor.\"}";
+            res.status(500); return "{\"erro\": \"" + e.getMessage() + "\"}";
         }
-    }
-
-    public Object deleteSeguro(Request req, Response res) {
-
-        try {
-
-            // 1. Descobrir quem está logado
-            String donoLogin = AuthService.getLoginFromToken(req);
-
-            if (donoLogin == null) {
-                res.status(401);
-                return "{\"erro\": \"Sessão inválida.\"}";
-            }
-
-            // 2. Buscar usuário
-            Usuario usuario = usuarioDAO.getByLogin(donoLogin);
-
-            if (usuario == null) {
-                res.status(401);
-                return "{\"erro\": \"Usuário não encontrado.\"}";
-            }
-
-            // 3. Pegar ID do favorito pela URL
-            int idFavorito = Integer.parseInt(req.params(":id"));
-
-            // 4. Buscar favorito
-            Favorito favorito = favoritoDAO.get(idFavorito);
-
-            if (favorito == null) {
-                res.status(404);
-                return "{\"erro\": \"Favorito não encontrado.\"}";
-            }
-
-            // 5. Verificar se pertence ao usuário logado
-            if (favorito.getIdUsuario() != usuario.getId()) {
-                res.status(403);
-                return "{\"erro\": \"Acesso negado: você não pode remover favoritos de outro usuário.\"}";
-            }
-
-            // 6. Deletar
-            favoritoDAO.delete(idFavorito);
-
-            res.status(204);
-            return "";
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-            res.status(500);
-            return "{\"erro\": \"Erro interno do servidor.\"}";
-        }
-    }
-
-    public Object getSeguro(Request req, Response res) {
-
-        try {
-
-            // 1. Descobrir quem está logado
-            String donoLogin = AuthService.getLoginFromToken(req);
-
-            if (donoLogin == null) {
-                res.status(401);
-                return "{\"erro\": \"Sessão inválida.\"}";
-            }
-
-            // 2. Buscar usuário
-            Usuario usuario = usuarioDAO.getByLogin(donoLogin);
-
-            if (usuario == null) {
-                res.status(401);
-                return "{\"erro\": \"Usuário não encontrado.\"}";
-            }
-
-            // 3. Pegar ID do favorito
-            int idFavorito = Integer.parseInt(req.params(":id"));
-
-            // 4. Buscar favorito
-            Favorito favorito = favoritoDAO.get(idFavorito);
-
-            if (favorito == null) {
-                res.status(404);
-                return "{\"erro\": \"Favorito não encontrado.\"}";
-            }
-
-            // 5. Verificar se pertence ao usuário logado
-            if (favorito.getIdUsuario() != usuario.getId()) {
-                res.status(403);
-                return "{\"erro\": \"Acesso negado.\"}";
-            }
-
-            // 6. Retornar favorito
-            res.status(200);
-            return gson.toJson(favorito);
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-            res.status(500);
-            return "{\"erro\": \"Erro interno do servidor.\"}";
-        }
-    }
-
-    // Listar favoritos de um usuário
-    public List<Favorito> listarFavoritosUsuario(int idUsuario) {
-        return favoritoDAO.getFavoritosByUsuario(idUsuario);
-    }
-
-    // Listar usuários que favoritaram um produto
-    public List<Favorito> listarFavoritosProduto(int idProduto) {
-        return favoritoDAO.getFavoritosByProduto(idProduto);
-    }
-
-    // Verificar se é favorito
-    public boolean isFavorito(int idUsuario, int idProduto) {
-        return favoritoDAO.isFavorito(idUsuario, idProduto);
     }
 }

@@ -163,75 +163,41 @@ public class Aplicacao {
 				put("/usuarios/:id", (req, res) -> usuarioService.update(req, res));
 				delete("/usuarios/:id", (req, res) -> usuarioService.delete(req, res));
 
-				// FAVORITOS (admin pode ver e gerenciar todos)
-
 				get("/favoritos", (req, res) -> favoritoService.getAll(req, res));
 				get("/favoritos/:id", (req, res) -> favoritoService.get(req, res));
-
-				post("/favoritos", (req, res) -> favoritoService.insert(req, res));
-				put("/favoritos/:id", (req, res) -> favoritoService.update(req, res));
 				delete("/favoritos/:id", (req, res) -> favoritoService.delete(req, res));
-
-				// PEDIDOS (admin pode ver todos)
 
 				get("/pedidos", (req, res) -> pedidoService.getAll(req, res));
 				get("/pedidos/:id", (req, res) -> pedidoService.get(req, res));
-
-				post("/pedidos", (req, res) -> pedidoService.insert(req, res));
 				put("/pedidos/:id", (req, res) -> pedidoService.update(req, res));
 				delete("/pedidos/:id", (req, res) -> pedidoService.delete(req, res));
 
-				// ITENS DO PEDIDO
-
 				get("/itens-pedido", (req, res) -> itemPedidoService.getAll(req, res));
 				get("/itens-pedido/:id", (req, res) -> itemPedidoService.get(req, res));
-
-				post("/itens-pedido", (req, res) -> itemPedidoService.insert(req, res));
-				put("/itens-pedido/:id", (req, res) -> itemPedidoService.update(req, res));
 				delete("/itens-pedido/:id", (req, res) -> itemPedidoService.delete(req, res));
 			});
 
 			// Rotas Comuns (Para o próprio usuário logado)
 			path("/comum", () -> {
 
-				// Rota Especial: BUSCAR os dados de QUEM ESTÁ LOGADO
+				// DADOS DO USUÁRIO
 				get("/meus-dados", (req, res) -> usuarioService.getMe(req, res));
-
-				// Rota Especial: ATUALIZAR os dados de QUEM ESTÁ LOGADO
 				put("/meus-dados", (req, res) -> usuarioService.updateMe(req, res));
 
-				// FAVORITOS
+				// FAVORITOS (Usa as versões reescritas no Service)
+				get("/favoritos", (req, res) -> favoritoService.getMeusFavoritos(req, res)); // Lista os meus
+				post("/favoritos", (req, res) -> favoritoService.insert(req, res));          // Adiciona
+				delete("/favoritos/:id", (req, res) -> favoritoService.delete(req, res));    // Remove
 
-				// listar favoritos do usuário logado
-				get("/favoritos", (req, res) -> favoritoService.getSeguro(req, res));
-
-				// adicionar favorito
-				post("/favoritos", (req, res) -> favoritoService.insertSeguro(req, res));
-
-				// atualizar favorito
-				put("/favoritos/:id", (req, res) -> favoritoService.updateSeguro(req, res));
-
-				// remover favorito
-				delete("/favoritos/:id", (req, res) -> favoritoService.deleteSeguro(req, res));
+				// PEDIDOS (Carrinho e Histórico)
+				post("/pedidos", (req, res) -> pedidoService.insert(req, res));             // Cria a nota
+				get("/pedidos", (req, res) -> pedidoService.getMeusPedidos(req, res));      // Lista as minhas notas
+				get("/pedidos/:id", (req, res) -> pedidoService.get(req, res));             // Abre uma nota minha
 
 				// ITENS DO PEDIDO
-
-				// adicionar item ao pedido
-				post("/itens-pedido", (req, res) -> itemPedidoService.adicionarItem(req, res));
-
-				// listar itens de um pedido
-				get("/itens-pedido", (req, res) -> itemPedidoService.getItensPedidoSeguro(req, res));
-
-				// PEDIDOS
-
-				// criar pedido
-				post("/pedidos", (req, res) -> pedidoService.criarPedido(req, res));
-
-				// listar meus pedidos
-				get("/pedidos", (req, res) -> pedidoService.getPedidoSeguro(req, res));
-
-				// ver um pedido específico
-				get("/pedidos/:id", (req, res) -> pedidoService.getPedidoSeguro(req, res));
+				post("/itens-pedido", (req, res) -> itemPedidoService.insert(req, res));             // Coloca item na nota
+				get("/pedidos/:idPedido/itens", (req, res) -> itemPedidoService.getItensPedidoSeguro(req, res)); // Abre itens da nota
+				
 			});
 
 			// Rotas de Gestão (NOVO BLOCO: Gerenciar Produtos e Categorias)
@@ -245,6 +211,18 @@ public class Aplicacao {
 				post("/produtos", (req, res) -> produtoService.insert(req, res));
 				put("/produtos/:id", (req, res) -> produtoService.update(req, res));
 				delete("/produtos/:id", (req, res) -> produtoService.delete(req, res));
+				
+				// ROTAS DE RELATÓRIO DE PEDIDOS
+                get("/pedidos/status/:status", (req, res) -> pedidoService.getPorStatus(req, res));
+                get("/pedidos/data/:dataLimite", (req, res) -> pedidoService.getAteData(req, res));
+                get("/pedidos/valor/:valorMaximo", (req, res) -> pedidoService.getAteValor(req, res));
+
+                // RELATÓRIOS CRUZADOS POR PRODUTO
+                // Ex: "Quais notas fiscais compraram o produto X?"
+                get("/produtos/:idProduto/itens-vendidos", (req, res) -> itemPedidoService.getItensPorProduto(req, res));
+                
+                // Ex: "Quem favoritou o produto X?"
+                get("/produtos/:idProduto/favoritos", (req, res) -> favoritoService.getFavoritosPorProduto(req, res));
 			});
 
 		});
