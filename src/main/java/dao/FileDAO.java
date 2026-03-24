@@ -124,4 +124,36 @@ public abstract class FileDAO<T extends Registro> {
         }
         return false; // ID não encontrado
     }
+    
+ // ---------- Métodos para ordenação externa ---------- //
+    private long posicaoLeituraAtual = 4; // posição após o cabeçalho
+
+    public void resetPointer() {
+        posicaoLeituraAtual = 4;
+    }
+
+    public List<T> lerProximoBloco(int maxRegistros) throws Exception {
+        List<T> bloco = new ArrayList<>();
+        arquivo.seek(posicaoLeituraAtual);
+        
+        while (bloco.size() < maxRegistros && arquivo.getFilePointer() < arquivo.length()) {
+            byte lapide = arquivo.readByte();
+            int tamanho = arquivo.readInt();
+            
+            if (lapide == ' ') {
+                byte[] dados = new byte[tamanho];
+                arquivo.read(dados);
+                T obj = classe.getDeclaredConstructor().newInstance();
+                obj.fromByteArray(dados);
+                bloco.add(obj);
+                posicaoLeituraAtual = arquivo.getFilePointer();
+            } else {
+                arquivo.skipBytes(tamanho);
+                posicaoLeituraAtual = arquivo.getFilePointer();
+            }
+        }
+        
+        return bloco;
+    }
+    
 }
