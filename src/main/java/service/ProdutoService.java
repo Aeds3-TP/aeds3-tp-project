@@ -62,6 +62,19 @@ public class ProdutoService extends BaseService<Produto> {
             return "{\"erro\": \"" + e.getMessage() + "\"}";
         }
     }
+    
+    public Object listarOrdenadosPorPreco(Request req, Response res) {
+        try {
+            ProdutoDAO prodDao = (ProdutoDAO) this.dao; 
+            
+            res.status(200);
+            return gson.toJson(prodDao.getProdutosOrdenadosPorPreco());
+            
+        } catch (Exception e) {
+            res.status(500);
+            return "{\"erro\": \"Falha na ordenação externa: " + e.getMessage() + "\"}";
+        }
+    }
 
     // Rota para o Relacionamento 1:N
     public Object listarPorCategoria(Request req, Response res) {

@@ -1,5 +1,6 @@
 package dao;
 
+import model.ItemPedido;
 import model.Pedido;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,5 +69,18 @@ public class PedidoDAO extends FileDAO<Pedido> {
         }
 
         return lista;
+    }
+    
+    @Override
+    public boolean delete(int idPedido) {
+        ItemPedidoDAO itemDao = new ItemPedidoDAO();
+        List<ItemPedido> itensDoPedido = itemDao.getItensByPedido(idPedido);
+        
+        for (ItemPedido item : itensDoPedido) {
+            itemDao.delete(item.getId()); // Apaga os filhos
+        }
+        
+        // Apaga o Pedido Pai
+        return super.delete(idPedido);
     }
 }

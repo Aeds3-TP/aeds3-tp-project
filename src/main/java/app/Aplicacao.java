@@ -211,6 +211,7 @@ public class Aplicacao {
 				post("/produtos", (req, res) -> produtoService.insert(req, res));
 				put("/produtos/:id", (req, res) -> produtoService.update(req, res));
 				delete("/produtos/:id", (req, res) -> produtoService.delete(req, res));
+				get("/produtos/relatorio/ordenados-preco", (req, res) -> produtoService.listarOrdenadosPorPreco(req, res));
 				
 				// ROTAS DE RELATÓRIO DE PEDIDOS
                 get("/pedidos/status/:status", (req, res) -> pedidoService.getPorStatus(req, res));
