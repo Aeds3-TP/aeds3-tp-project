@@ -130,6 +130,7 @@ public class Aplicacao {
 		get("/produtos/:id", (req, res) -> produtoService.get(req, res));
 		get("/produtos/categoria/:idCategoria", (req, res) -> produtoService.listarPorCategoria(req, res));
 		get("/produtos/preco/:preco", (req, res) -> produtoService.listarAtePreco(req, res));
+		get("/produtos/relatorio/ordenados-preco", (req, res) -> produtoService.listarOrdenadosPorPreco(req, res)); //ordenacao externa
 
 		get("/categorias", (req, res) -> categoriaService.getAll(req, res));
 		get("/categorias/:id", (req, res) -> categoriaService.get(req, res));
@@ -211,7 +212,6 @@ public class Aplicacao {
 				post("/produtos", (req, res) -> produtoService.insert(req, res));
 				put("/produtos/:id", (req, res) -> produtoService.update(req, res));
 				delete("/produtos/:id", (req, res) -> produtoService.delete(req, res));
-				get("/produtos/relatorio/ordenados-preco", (req, res) -> produtoService.listarOrdenadosPorPreco(req, res));
 				
 				// ROTAS DE RELATÓRIO DE PEDIDOS
                 get("/pedidos/status/:status", (req, res) -> pedidoService.getPorStatus(req, res));
