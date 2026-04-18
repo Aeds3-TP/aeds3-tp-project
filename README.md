@@ -23,14 +23,14 @@ O projeto segue a arquitetura em camadas (MVC/DAO) para total separação de res
 * **dao:** Data Access Objects, responsáveis pela persistência física dos bytes em disco (`.db`).
 * **indice:** Algoritmos de estruturas de dados para indexação (Hash Extensível).
 * **service:** Regras de negócio, segurança (Criptografia de senhas com XOR) e controle de rotas REST.
-* **util:** Utilitários complexos, como o motor de Ordenação Externa.
+* **util:** Utilitários, como o motor de Ordenação Externa.
 * **Backend Web:** Spark Java (Porta 3000).
-* **Frontend:** HTML5, CSS3, Vanilla JavaScript (Fetch API) localizado em `src/main/resources/public`.
+* **Frontend:** HTML5, CSS3, JavaScript (Fetch API) localizado em `src/main/resources/public`.
 
 ## 📁 Estrutura de Diretórios de Dados (`/dados`)
 O sistema gerencia autonomamente seus arquivos de persistência nas seguintes pastas:
 - `registros/`: Arquivos de dados principais (`.db`).
-- `indices/`: Arquivos de indexação Hash (`.hash_d`, `.hash_b`).
+- `indices/`: Arquivos de indexação exemplo: Hash (`.hash_d`, `.hash_b`).
 - `relatorios/`: Destino dos arquivos gerados pela Ordenação Externa (`produto_ordenado.db`).
 - `temp/`: Arquivos temporários (apagados automaticamente após ordenações).
 
