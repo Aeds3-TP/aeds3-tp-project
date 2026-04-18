@@ -34,11 +34,18 @@ O sistema gerencia autonomamente seus arquivos de persistência nas seguintes pa
 - `relatorios/`: Destino dos arquivos gerados pela Ordenação Externa (`produto_ordenado.db`).
 - `temp/`: Arquivos temporários (apagados automaticamente após ordenações).
 
+## 🧰 Ferramentas Necessárias (Pré-requisitos)
+Antes de baixar e executar o projeto, certifique-se de ter as seguintes ferramentas instaladas em sua máquina:
+* **Java Development Kit (JDK):** Essencial para compilar e rodar a aplicação baseada no `pom.xml`.
+* **Apache Maven:** Gerenciador responsável por baixar as dependências automaticamente (Spark Java, Gson, JWT).
+* **IDE Java:** Recomendado **Eclipse** (IDE principal utilizada no desenvolvimento) ou **VS Code** (com a extensão *Extension Pack for Java* instalada).
+* **Navegador Web:** Google Chrome, Edge ou Firefox para visualizar a interface de usuário.
+
 ## 🛠️ Como Compilar e Executar
 
 A porta de entrada do projeto é o arquivo principal **`Aplicacao.java`** localizado no pacote `app`. 
 
-**Passo a passo via VS Code ou Eclipse:**
+**Passo a passo via VS Code ou Eclipse(IDE principal utilizada):**
 1. Clone este repositório e abra o projeto na sua IDE.
 2. Certifique-se de que as dependências do **Maven** foram baixadas (Spark Java).
 3. Navegue até `src/main/java/app/Aplicacao.java`.
