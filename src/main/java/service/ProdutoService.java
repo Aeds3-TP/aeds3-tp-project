@@ -1,7 +1,7 @@
 package service;
 
-import dao.ProdutoDAO;
 import dao.CategoriaDAO;
+import dao.ProdutoDAO;
 import model.Produto;
 import spark.Request;
 import spark.Response;

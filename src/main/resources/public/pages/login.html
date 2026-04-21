@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - MercadoFácil</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #B8860B, #DAA520);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .auth-container {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .card {
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-header {
+      background: linear-gradient(135deg, #B8860B, #DAA520);
+      border: none;
+      border-radius: 12px 12px 0 0;
+    }
+
+    .form-control:focus {
+      border-color: #B8860B;
+      box-shadow: 0 0 0 0.2rem rgba(184, 134, 11, 0.25);
+    }
+
+    .btn-primary {
+      background-color: #B8860B;
+      border-color: #B8860B;
+    }
+
+    .btn-primary:hover {
+      background-color: #DAA520;
+      border-color: #DAA520;
+    }
+
+    .toggle-form {
+      cursor: pointer;
+      color: #B8860B;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .toggle-form:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="toastContainer" class="toast-container position-fixed bottom-0 end-0 p-3"></div>
+
+  <div class="auth-container">
+    <div id="loginForm" class="card">
+      <div class="card-header text-white text-center py-4">
+        <h2 class="mb-0">
+          <i class="bi bi-shop"></i> MercadoFácil
+        </h2>
+      </div>
+      <div class="card-body p-5">
+        <h5 class="text-center mb-4">Bem-vindo de volta!</h5>
+
+        <form id="loginFormElement">
+          <div class="mb-3">
+            <label for="loginEmail" class="form-label">Login (Email)</label>
+            <input type="text" class="form-control" id="loginEmail" placeholder="seu login" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="loginPassword" class="form-label">Senha</label>
+            <input type="password" class="form-control" id="loginPassword" placeholder="••••••••" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100 mb-3">
+            <i class="bi bi-box-arrow-in-right"></i> Entrar
+          </button>
+        </form>
+
+        <hr>
+
+        <p class="text-center text-muted mb-0">
+          Não tem conta?
+          <a href="#" class="toggle-form" onclick="switchToRegister(event)">Criar agora</a>
+        </p>
+      </div>
+    </div>
+
+    <div id="registerForm" class="card" style="display: none;">
+      <div class="card-header text-white text-center py-4">
+        <h2 class="mb-0">
+          <i class="bi bi-shop"></i> MercadoFácil
+        </h2>
+      </div>
+      <div class="card-body p-5">
+        <h5 class="text-center mb-4">Criar Conta</h5>
+
+        <form id="registerFormElement">
+          <div class="mb-3">
+            <label for="registerName" class="form-label">Nome Completo</label>
+            <input type="text" class="form-control" id="registerName" placeholder="João Silva" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="registerEmail" class="form-label">Email</label>
+            <input type="email" class="form-control" id="registerEmail" placeholder="seu@email.com" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="registerPassword" class="form-label">Senha</label>
+            <input type="password" class="form-control" id="registerPassword" placeholder="••••••••" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="registerPasswordConfirm" class="form-label">Confirmar Senha</label>
+            <input type="password" class="form-control" id="registerPasswordConfirm" placeholder="••••••••" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100 mb-3">
+            <i class="bi bi-person-plus"></i> Criar Conta
+          </button>
+        </form>
+
+        <hr>
+
+        <p class="text-center text-muted mb-0">
+          Já tem conta?
+          <a href="#" class="toggle-form" onclick="switchToLogin(event)">Entrar</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/utils.js"></script>
+  <script>
+    function switchToLogin(e) {
+      if (e) e.preventDefault();
+      document.getElementById('loginForm').style.display = 'block';
+      document.getElementById('registerForm').style.display = 'none';
+    }
+
+    function switchToRegister(e) {
+      if (e) e.preventDefault();
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('registerForm').style.display = 'block';
+    }
+
+ // ==========================================
+// 1. LÓGICA DE LOGIN
+// ==========================================
+document.getElementById('loginFormElement').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const loginInput = document.getElementById('loginEmail').value;
+  const senhaInput = document.getElementById('loginPassword').value;
+
+  try {
+    const response = await apiPost('/login', { login: loginInput, senha: senhaInput });
+    
+    if (response && response.role) {
+      localStorage.setItem('user', JSON.stringify({ 
+        login: loginInput, 
+        role: response.role 
+      }));
+      window.location.href = '../index.html'; 
+    } else {
+      showToast('Dados de usuário não recebidos.', 'error');
+    }
+  } catch (error) {
+    console.error("Erro no login:", error);
+    showToast('Usuário ou senha incorretos!', 'error');
+  }
+});
+
+// ==========================================
+// 2. LÓGICA DE REGISTRO (CORRIGIDA)
+// ==========================================
+// Verifique se no seu HTML o formulário de cadastro tem esse ID: registerFormElement
+const registerForm = document.getElementById('registerFormElement');
+
+if (registerForm) {
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Pegue os IDs corretos do formulário de CADASTRO
+      const nome = document.getElementById('registerName').value;
+      const email = document.getElementById('registerEmail').value;
+      const senha = document.getElementById('registerPassword').value;
+
+      try {
+        // O registro envia para /usuario, não para /login!
+        await apiPost('/usuario', { 
+            nome: nome, 
+            login: email, 
+            email: email, 
+            senha: senha,
+            role: "USUARIO" 
+        });
+        
+        showToast('Conta criada com sucesso! Redirecionando para login...');
+        setTimeout(() => {
+            // Se você tiver a função switchToLogin() use-a, 
+            // senão use: window.location.reload();
+            if(typeof switchToLogin === 'function') switchToLogin();
+            else window.location.reload();
+        }, 1500);
+
+      } catch (error) {
+        console.error("Erro no registro:", error);
+        showToast('Erro ao criar conta: ' + (error.message || 'Dados inválidos'), 'error');
+      }
+    });
+}
+
+    
+  </script>
+</body>
+
+</html>

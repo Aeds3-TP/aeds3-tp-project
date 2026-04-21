@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MercadoFácil - Loja Virtual</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="index.html">
+        <i class="bi bi-shop"></i> MercadoFácil
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Buscar produtos..." style="width: 200px;">
+          </li>
+          <li class="nav-item ms-3">
+            <a class="nav-link" href="pages/favorites.html">
+              <i class="bi bi-heart"></i> Favoritos
+            </a>
+          </li>
+          <li class="nav-item ms-3">
+            <a class="nav-link" href="pages/orders.html">
+              <i class="bi bi-bag"></i> Pedidos
+            </a>
+          </li>
+          <li class="nav-item ms-3">
+            <button class="btn btn-light btn-sm position-relative" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
+              <i class="bi bi-cart3"></i> Carrinho
+              <span id="cartCount" class="badge bg-danger position-absolute top-0 start-100 translate-middle" style="display: none;"></span>
+            </button>
+          </li>
+          <li class="nav-item ms-3">
+            <div class="dropdown">
+              <button class="btn btn-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="bi bi-person"></i> <span id="userName">Usuário</span>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="/admin/index.html" id="adminLink" style="display: none;">Painel Admin</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" onclick="logout()">Sair</a></li>
+              </ul>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-5">
+    <div class="hero rounded-4 p-5 text-center bg-light border shadow-sm">
+      <h1>Bem-vindo ao MercadoFácil</h1>
+      <p>Produtos selecionados com qualidade e sofisticação para o seu dia a dia</p>
+    </div>
+  </div>
+
+  <div class="container my-5">
+    <div class="row">
+      <div class="col-lg-3 mb-4">
+        <div class="sidebar border rounded-4 p-3 bg-white shadow-sm">
+          <h5 class="mx-1">Categorias</h5>
+          <div id="categoriesList" class="mt-3">
+            <p class="text-muted">Carregando...</p>
+          </div>
+
+          <hr>
+
+          <h5 class="mx-1">Filtros</h5>
+          <div class="filter-section">
+            <label for="priceRange" class="mx-1">Preço máximo: <span id="priceValue" class="fw-bold">R$ 1000</span></label>
+            <input type="range" class="form-range" id="priceRange" min="0" max="1000" value="1000">
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-9">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2>Produtos</h2>
+          <select class="form-select" id="sortSelect" style="width: auto;">
+            <option value="newest">Mais recentes</option>
+            <option value="price_asc">Menor preço</option>
+            <option value="price_desc">Maior preço</option>
+            <option value="name">Nome (A-Z)</option>
+          </select>
+        </div>
+
+        <div id="productsGrid" class="row g-4">
+          <p class="text-muted text-center py-5">Carregando produtos...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas">
+    <div class="offcanvas-header border-bottom">
+      <h5 class="offcanvas-title">Seu Carrinho</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+      <div id="cartItems">
+        <p class="text-center text-muted">Carrinho vazio</p>
+      </div>
+      <hr>
+      <div class="d-flex justify-content-between mb-3">
+        <strong>Total:</strong>
+        <strong id="cartTotal">R$ 0,00</strong>
+      </div>
+      <button class="btn btn-primary w-100 rounded-pill" onclick="goToCheckout()">Ir para Checkout</button>
+    </div>
+  </div>
+
+  <footer class="mt-5 border-top">
+    <div class="container text-center py-4">
+      <p class="mb-0 text-muted">&copy; 2026 MercadoFácil. Todos os direitos reservados.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/cart.js"></script>
+  <script>
+    let allProducts = [];
+    let selectedCategory = null;
+    let maxPrice = 1000;
+    let searchTerm = '';
+    let sortBy = 'newest';
+    let favoriteIds = new Set(); 
+
+    document.addEventListener('DOMContentLoaded', () => {
+      requireAuth();
+      loadUser();
+      loadCategories();
+      loadProducts();
+      setupEventListeners();
+      if(typeof cart !== 'undefined') cart.updateCartUI();
+      fetchFavorites(); 
+    });
+
+    window.addEventListener('focus', () => {
+        fetchFavorites();
+    });
+
+    async function fetchFavorites() {
+        try {
+            const favs = await apiGet('/api/comum/favoritos');
+            // Atualiza o Set local com o que está no Banco agora
+            favoriteIds = new Set(favs.map(f => f.idProduto));
+            
+            // Se a lista de produtos já estiver carregada, redesenha a vitrine
+            if (allProducts.length > 0) {
+                renderProducts();
+            }
+        } catch (e) { 
+            console.error("Erro ao sincronizar favoritos", e); 
+        }
+    }
+
+    function loadUser() {
+      const user = getCurrentUser();
+      if (user) {
+        document.getElementById('userName').textContent = user.name || 'Usuário';
+        if (isAdmin()) document.getElementById('adminLink').style.display = 'block';
+      }
+    }
+
+    async function loadCategories() {
+      try {
+        const categories = await apiGet('/categorias');
+        const categoriesList = document.getElementById('categoriesList');
+
+        if (!document.getElementById('product-custom-style')) {
+          const style = document.createElement('style');
+          style.id = 'product-custom-style';
+          style.innerHTML = `
+            .category-item { transition: 0.3s; padding: 8px 15px; border-radius: 8px; cursor: pointer; margin-bottom: 5px; }
+            .category-item:hover { background-color: #B8860B !important; color: white !important; }
+            .category-item.active { background-color: #B8860B; color: white; font-weight: bold; }
+            
+            .product-image-container {
+                height: 200px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+                background-color: #f8f9fa;
+                position: relative;
+                border-radius: 12px 12px 0 0;
+            }
+            .product-image {
+                max-height: 100%;
+                max-width: 100%;
+                object-fit: contain;
+            }
+            .btn-favorite {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                z-index: 10;
+                background: rgba(255,255,255,0.9);
+                border-radius: 50%;
+                border: none;
+                padding: 6px 9px;
+                transition: 0.2s;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            }
+            .btn-favorite i.bi-heart-fill { color: #B8860B !important; }
+            .btn-favorite i.bi-heart { color: #666; }
+            .product-price { color: #B8860B; font-size: 1.25rem; }
+          `;
+          document.head.appendChild(style);
+        }
+
+        categoriesList.innerHTML = `
+          <div class="category-item ${!selectedCategory ? 'active' : ''}" onclick="filterByCategory(null)">Todos</div>
+          ${categories.map(cat => `
+            <div class="category-item ${selectedCategory == cat.id ? 'active' : ''}" onclick="filterByCategory(${cat.id})">
+              ${cat.nome}
+            </div>`).join('')}
+        `;
+      } catch (error) { console.error(error); }
+    }
+
+    async function loadProducts() {
+      try {
+        let endpoint = '/produtos';
+
+        // A MÁGICA AQUI: Se pediu menor preço e não tem filtro de categoria, aciona a Ordenação Externa no Backend!
+        if (sortBy === 'price_asc' && !selectedCategory) {
+            endpoint = '/produtos/relatorio/ordenados-preco';
+        } else if (selectedCategory) {
+            endpoint = `/produtos/categoria/${selectedCategory}`;
+        }
+
+        allProducts = await apiGet(endpoint);
+        renderProducts();
+      } catch (error) { 
+        showToast('Erro ao carregar produtos', 'error'); 
+      }
+    }
+
+    function renderProducts() {
+      const grid = document.getElementById('productsGrid');
+      
+      let filtered = allProducts.filter(p => {
+        const matchesName = p.nome.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesPrice = p.preco <= maxPrice;
+        return matchesName && matchesPrice;
+      });
+
+      // Se a ordenação for Maior preço ou Nome, mantém ordenando no Front. 
+      // (O Menor Preço foi removido daqui pois o Backend já entregou ordenado).
+      if (sortBy === 'price_desc') filtered.sort((a, b) => b.preco - a.preco);
+      else if (sortBy === 'name') filtered.sort((a, b) => a.nome.localeCompare(b.nome));
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Nenhum produto encontrado</p></div>';
+        return;
+      }
+
+      grid.innerHTML = filtered.map(product => {
+        const imageUrl = (product.imagensUrls && product.imagensUrls.length > 0) ? product.imagensUrls[0] : null;
+        const isFav = favoriteIds.has(product.id);
+
+        return `
+        <div class="col-sm-6 col-lg-4">
+          <div class="card product-card h-100 shadow-sm border-0 rounded-4">
+            <div class="product-image-container">
+              ${imageUrl ? `<img src="${imageUrl}" class="product-image" alt="${product.nome}">` : 
+              `<i class="bi bi-image text-muted" style="font-size: 2rem;"></i>`}
+              <button class="btn-favorite" onclick="toggleFavorite(${product.id})">
+                <i class="bi ${isFav ? 'bi-heart-fill' : 'bi-heart'}"></i>
+              </button>
+            </div>
+            <div class="card-body">
+              <h5 class="card-title text-truncate">${product.nome}</h5>
+              <p class="card-text text-muted small" style="height: 40px; overflow: hidden;">${product.descricaoProd || ''}</p>
+              <div class="d-flex justify-content-between align-items-center mt-3">
+                <span class="product-price fw-bold">${formatPrice(product.preco)}</span>
+                ${product.quantidadeEstoque > 0 ? 
+                  `<button class="btn btn-primary btn-sm rounded-pill px-3" onclick="addToCart(${product.id})">Adicionar</button>` : 
+                  `<span class="badge bg-secondary">Esgotado</span>`}
+              </div>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    async function toggleFavorite(productId) {
+      try {
+        if (favoriteIds.has(productId)) {
+            await apiDelete(`/api/comum/favoritos/${productId}`); 
+            favoriteIds.delete(productId);
+            showToast('Removido dos favoritos');
+        } else {
+            await apiPost('/api/comum/favoritos', { idProduto: productId });
+            favoriteIds.add(productId);
+            showToast('Adicionado aos favoritos!');
+        }
+        renderProducts(); 
+      } catch (error) { showToast('Erro ao atualizar favorito', 'error'); }
+    }
+
+    function addToCart(productId) {
+      const product = allProducts.find(p => p.id === productId);
+      
+      if (product) {
+        // 1. Busca o que já está no carrinho (se houver)
+        const itemNoCarrinho = cart.items.find(item => item.id === productId);
+        
+        // 2. Calcula quanto o usuário quer ter no total (atual + 1)
+        const quantidadeFutura = (itemNoCarrinho ? itemNoCarrinho.quantity : 0) + 1;
+
+        // 3. CHAMA A TRAVA DO UTILS.JS
+        // Se o validarEstoque retornar false, ele mostra o toast e a função para aqui
+        if (!validarEstoque(quantidadeFutura, product.quantidadeEstoque)) {
+          return; 
+        }
+
+        // 4. Se passou na trava, aí sim adiciona
+        cart.addItem(product);
+        if(typeof cart !== 'undefined') cart.updateCartUI();
+      }
+    }
+
+    function filterByCategory(id) {
+      selectedCategory = id;
+      loadCategories();
+      loadProducts();
+    }
+
+    function setupEventListeners() {
+      document.getElementById('searchInput').addEventListener('input', (e) => {
+        searchTerm = e.target.value;
+        renderProducts();
+      });
+
+      document.getElementById('priceRange').addEventListener('input', (e) => {
+        maxPrice = e.target.value;
+        document.getElementById('priceValue').textContent = formatPrice(maxPrice);
+        renderProducts();
+      });
+
+      document.getElementById('sortSelect').addEventListener('change', (e) => {
+        sortBy = e.target.value;
+        
+        // Se a pessoa selecionou Menor Preço, temos que ir no Back-end rodar a Ordenação Externa.
+        if (sortBy === 'price_asc') {
+            document.getElementById('productsGrid').innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-warning" role="status"></div><p class="mt-2 text-muted">Ordenando no disco do servidor...</p></div>';
+            loadProducts(); 
+        } else {
+            renderProducts(); 
+        }
+      });
+    }
+
+    function goToCheckout() {
+      if (cart.items.length === 0) {
+        showToast('Carrinho vazio', 'error');
+        return;
+      }
+
+      // Percorre todos os itens do carrinho para validar o estoque atual
+      for (const item of cart.items) {
+        // Tentamos encontrar o produto atualizado na nossa lista local 'allProducts'
+        const productData = allProducts.find(p => p.id === item.id);
+        
+        if (productData) {
+          // Se a quantidade no carrinho for maior que o estoque disponível no banco
+          if (item.quantity > productData.quantidadeEstoque) {
+            showToast(`O produto "${item.name}" excedeu o estoque (Disponível: ${productData.quantidadeEstoque})`, 'error');
+            return; // Para a execução e não deixa ir para o checkout
+          }
+        }
+      }
+
+      // Se passou por todos os itens sem retornar, vai para o checkout
+      window.location.href = 'pages/checkout.html';
+    }
+  </script>
+</body>
+</html>

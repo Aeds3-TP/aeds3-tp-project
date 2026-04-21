@@ -1,17 +1,17 @@
 package service;
 
+import java.util.List;
+
 import dao.ItemPedidoDAO;
+import dao.PedidoDAO;
+import dao.ProdutoDAO;
+import dao.UsuarioDAO;
 import model.ItemPedido;
 import model.Pedido;
 import model.Produto;
 import model.Usuario;
-import dao.ProdutoDAO;
-import dao.UsuarioDAO;
-import dao.PedidoDAO;
 import spark.Request;
 import spark.Response;
-
-import java.util.List;
 
 public class ItemPedidoService extends BaseService<ItemPedido> {
 

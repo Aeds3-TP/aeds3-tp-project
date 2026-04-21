@@ -1,12 +1,12 @@
 package dao;
 
-import model.Favorito;
-import model.Produto;
-
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
+
+import model.Favorito;
+import model.Produto;
 
 public class ProdutoDAO extends FileDAO<Produto> {
 

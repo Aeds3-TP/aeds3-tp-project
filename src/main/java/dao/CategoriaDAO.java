@@ -1,9 +1,9 @@
 package dao;
 
+import java.util.List;
+
 import model.Categoria;
 import model.Produto;
-
-import java.util.List;
 
 public class CategoriaDAO extends FileDAO<Categoria> {
 
