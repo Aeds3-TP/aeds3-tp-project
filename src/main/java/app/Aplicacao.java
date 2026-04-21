@@ -291,7 +291,7 @@ public class Aplicacao {
                             System.out.println("Digite a quantidade inicial do produto!");
                             int quant = sc.nextInt();
                             sc.nextLine(); 
-                            System.out.println("Digite as tags do produto separadas por vírgula (ex: celular,oferta,tecnologia):");
+                            System.out.println("Digite as tags do produto separadas por vírgula (ex: graos, vegetais):");
                             String strTags = sc.nextLine();
                             String[] tags = strTags.isEmpty() ? new String[0] : strTags.split(",");
                             Produto newProduto = new Produto(idCategoria, nome, descricao, preco, data, quant, tags, null);
