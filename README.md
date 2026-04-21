@@ -53,7 +53,7 @@ A porta de entrada do projeto é o arquivo principal **`Aplicacao.java`** locali
 
 ### Utilizando o Sistema
 Caso tenha interesse em testar o site pode utilizar os dois usuarios de teste ja criados, caso você queira criar outro usuario pode utilizar a pagina do frontend
-para criar um novo Usuario comum, porem caso queira criar um novo ADMIN você tem duas opções ou criar o fetch de um novo usuario com a role ADMIN manualmente no terminal F12 (já que a segurança dessa rota está desativada para testes) ou utilizar o terminal de testes do backend criando manualmente o ADMIN também.
+para criar um novo Usuario comum. Porem caso queira criar um novo ADMIN você tem duas opções, ou criar o fetch de um novo usuario com a role ADMIN manualmente no terminal F12 (já que a segurança dessa rota está desativada para testes) ou utilizar o terminal de testes do backend, criando manualmente o ADMIN.
 
 Administrador:
 Email: admin@gmail.com
