@@ -8,7 +8,7 @@ O sistema possui uma arquitetura híbrida: oferece um **Terminal Interativo (CLI
 
 * Rafael Assis Carvalho Lacerda
 * Rafael Portilho de Andrade 
-* Bernardo Barbosa Heronvile
+* Bernardo Barbosa Heronville
 * Gabriel Assis Carvalho Lacerda
 * Pedro Henrique Lopes De Melo
 
