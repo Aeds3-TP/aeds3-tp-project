@@ -52,6 +52,17 @@ A porta de entrada do projeto é o arquivo principal **`Aplicacao.java`** locali
 4. Execute a classe (`Run Java`).
 
 ### Utilizando o Sistema
+Caso tenha interesse em testar o site pode utilizar os dois usuarios de teste ja criados, caso você queira criar outro usuario pode utilizar a pagina do frontend
+para criar um novo Usuario comum, porem caso queira criar um novo ADMIN você tem duas opções ou criar o fetch de um novo usuario com a role ADMIN manualmente no terminal F12 (já que a segurança dessa rota está desativada para testes) ou utilizar o terminal de testes do backend criando manualmente o ADMIN também.
+
+Administrador:
+Email: admin@gmail.com
+Senha: 123
+
+Usuario comum:
+Email: teste@gmail.com
+Senha: 123
+
 Ao rodar a aplicação, dois ambientes estarão disponíveis simultaneamente:
 
 **1. O Terminal Interativo (Backend CLI)**
