@@ -1,7 +1,5 @@
 package service;
 
-import java.util.List;
-
 import dao.FavoritoDAO;
 import dao.ProdutoDAO;
 import dao.UsuarioDAO;
@@ -10,6 +8,8 @@ import model.Produto;
 import model.Usuario;
 import spark.Request;
 import spark.Response;
+
+import java.util.List;
 
 public class FavoritoService extends BaseService<Favorito> {
 
@@ -75,39 +75,35 @@ public class FavoritoService extends BaseService<Favorito> {
         }
     }
 
-   @Override
+    @Override
     public Object delete(Request req, Response res) {
         try {
-            // 1. Pega o login do usuário pelo token
             String donoLogin = AuthService.getLoginFromToken(req);
             if (donoLogin == null) {
-                res.status(401); 
-                return "{\"erro\": \"Sessão inválida.\"}";
+                res.status(401); return "{\"erro\": \"Sessão inválida.\"}";
             }
             
-            // 2. Busca o objeto usuário completo para ter o ID
             UsuarioDAO usuarioDAO = new UsuarioDAO();
             Usuario usuario = usuarioDAO.getByLogin(donoLogin);
 
-            // 3. ATENÇÃO AQUI: O ":id" que vem da URL é o ID do PRODUTO
-            int idProduto = Integer.parseInt(req.params(":id"));
-            
-            FavoritoDAO favDao = (FavoritoDAO) this.dao;
+            int idFavorito = Integer.parseInt(req.params(":id"));
+            Favorito favorito = this.dao.get(idFavorito);
 
-            // 4. Usa o novo método do DAO que criamos: delete(idUsuario, idProduto)
-            // Isso remove a relação correta sem precisar do ID interno da tabela
-            if (favDao.delete(usuario.getId(), idProduto)) {
-                res.status(200);
-                return "{\"msg\": \"Favorito removido com sucesso.\"}";
-            } else {
-                res.status(404); 
-                return "{\"erro\": \"Este produto não estava nos seus favoritos.\"}";
+            if (favorito == null) {
+                res.status(404); return "{\"erro\": \"Favorito não encontrado.\"}";
             }
 
+            // A trava de segurança!
+            if (favorito.getIdUsuario() != usuario.getId()) {
+                res.status(403); return "{\"erro\": \"Acesso negado: você não pode remover favoritos de outro usuário.\"}";
+            }
+
+            this.dao.delete(idFavorito);
+            res.status(200);
+            return "{\"msg\": \"Favorito removido com sucesso.\"}";
+
         } catch (Exception e) {
-            e.printStackTrace(); // Log para você ver o erro no console do VS Code
-            res.status(500); 
-            return "{\"erro\": \"Erro interno do servidor.\"}";
+            res.status(500); return "{\"erro\": \"Erro interno do servidor.\"}";
         }
     }
     

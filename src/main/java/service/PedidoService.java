@@ -1,20 +1,18 @@
 package service;
 
-import java.util.List;
-
 import dao.PedidoDAO;
-import dao.ProdutoDAO; // Import necessário
 import dao.UsuarioDAO;
-import model.ItemPedido;
-import model.Pedido; // Import necessário para percorrer os itens
-import model.Produto;    // Import necessário
+import model.Pedido;
 import model.Usuario;
 import spark.Request;
 import spark.Response;
 
+import java.util.List;
+
 public class PedidoService extends BaseService<Pedido> {
 
     public PedidoService() {
+        // Apenas o super! O BaseService já cria a variável 'this.dao'
         super(new PedidoDAO());
     }
 
@@ -25,30 +23,7 @@ public class PedidoService extends BaseService<Pedido> {
 
     @Override
     protected void onBeforeInsert(Pedido obj) throws Exception {
-        obj.validar(); // Isso vai travar se a lista de itens estiver vazia
-        ProdutoDAO produtoDAO = new ProdutoDAO();
-
-        // Verificação
-        for (ItemPedido item : obj.getItens()) {
-            Produto p = produtoDAO.get(item.getIdProduto());
-            if (p == null) {
-                throw new Exception("Produto inexistente.");
-            }
-
-            if (item.getQuantidade() > p.getQuantidadeEstoque()) {
-                throw new Exception("Estoque insuficiente para " + p.getNome());
-            }
-        }
-
-        // Baixa definitiva
-        for (ItemPedido item : obj.getItens()) {
-            Produto p = produtoDAO.get(item.getIdProduto());
-            p.setQuantidadeEstoque(p.getQuantidadeEstoque() - item.getQuantidade());
-            boolean atualizou = produtoDAO.update(p);
-            if (!atualizou) {
-                throw new Exception("Erro ao salvar estoque no arquivo.");
-            }
-        }
+        obj.validar();
     }
 
     @Override
@@ -56,36 +31,42 @@ public class PedidoService extends BaseService<Pedido> {
         obj.validar();
     }
 
+    
     @Override
     public Object insert(Request req, Response res) {
         try {
-            // Autenticação (você já tem)
             String donoLogin = AuthService.getLoginFromToken(req);
             if (donoLogin == null) {
                 res.status(401);
-                return "{\"erro\": \"Sessão inválida.\"}";
+                return "{\"erro\": \"Sessão inválida. Faça login para comprar.\"}";
             }
 
-            Usuario u = new UsuarioDAO().getByLogin(donoLogin);
-            Pedido pedido = gson.fromJson(req.body(), getModelClass());
+            UsuarioDAO userDAO = new UsuarioDAO();
+            Usuario user = userDAO.getByLogin(donoLogin);
+            if (user == null) {
+                res.status(401);
+                return "{\"erro\": \"Usuário não encontrado.\"}";
+            }
 
-            pedido.setIdUsuario(u.getId());
+            Pedido pedido = gson.fromJson(req.body(), getModelClass());
+            if (pedido == null) {
+                res.status(400);
+                return "{\"erro\": \"JSON inválido.\"}";
+            }
+
+            pedido.setIdUsuario(user.getId());
             pedido.setDataCompra(System.currentTimeMillis());
 
-            // CHAMADA CRÍTICA: Se o estoque falhar, o código pula direto para o 'catch'
             onBeforeInsert(pedido);
-
-            // SÓ GRAVA NO PEDIDO.DB SE O ONBEFOREINSERT PASSOU
-            this.dao.insert(pedido);
+            this.dao.insert(pedido); // Usa o 'dao' do BaseService
 
             res.status(201);
             return gson.toJson(pedido);
 
         } catch (Exception e) {
-            // Se cair aqui, o erro foi o estoque insuficiente ou produto inexistente
-            System.err.println("ERRO NO PEDIDO: " + e.getMessage());
-            res.status(400); // Bad Request
-            return "{\"erro\": \"" + e.getMessage() + "\"}";
+            e.printStackTrace();
+            res.status(500);
+            return "{\"erro\": \"Erro interno do servidor.\"}";
         }
     }
 
@@ -102,13 +83,14 @@ public class PedidoService extends BaseService<Pedido> {
             Usuario usuario = usuarioDAO.getByLogin(donoLogin);
 
             int idPedido = Integer.parseInt(req.params(":id"));
-            Pedido pedido = this.dao.get(idPedido);
+            Pedido pedido = this.dao.get(idPedido); // Usa o 'dao' do BaseService
 
             if (pedido == null) {
                 res.status(404);
                 return "{\"erro\": \"Pedido não encontrado.\"}";
             }
 
+            // Regra de segurança
             if (pedido.getIdUsuario() != usuario.getId()) {
                 res.status(403);
                 return "{\"erro\": \"Acesso negado.\"}";
@@ -123,8 +105,9 @@ public class PedidoService extends BaseService<Pedido> {
             return "{\"erro\": \"Erro interno do servidor.\"}";
         }
     }
+    
+ // --- RELATÓRIOS PARA A GESTÃO ---
 
-    // --- RELATÓRIOS PARA A GESTÃO ---
     public Object getPorStatus(Request req, Response res) {
         try {
             String status = req.params(":status");
@@ -132,8 +115,7 @@ public class PedidoService extends BaseService<Pedido> {
             res.status(200);
             return gson.toJson(pedDao.getPedidosByStatus(status));
         } catch (Exception e) {
-            res.status(500);
-            return "{\"erro\": \"" + e.getMessage() + "\"}";
+            res.status(500); return "{\"erro\": \"" + e.getMessage() + "\"}";
         }
     }
 
@@ -144,8 +126,7 @@ public class PedidoService extends BaseService<Pedido> {
             res.status(200);
             return gson.toJson(pedDao.getPedidosAteData(data));
         } catch (Exception e) {
-            res.status(500);
-            return "{\"erro\": \"" + e.getMessage() + "\"}";
+            res.status(500); return "{\"erro\": \"" + e.getMessage() + "\"}";
         }
     }
 
@@ -156,11 +137,11 @@ public class PedidoService extends BaseService<Pedido> {
             res.status(200);
             return gson.toJson(pedDao.getPedidosAteValor(valor));
         } catch (Exception e) {
-            res.status(500);
-            return "{\"erro\": \"" + e.getMessage() + "\"}";
+            res.status(500); return "{\"erro\": \"" + e.getMessage() + "\"}";
         }
     }
 
+    // MÉTODO NOVO: O que faltava para listar "Minhas Compras"
     public Object getMeusPedidos(Request req, Response res) {
         try {
             String donoLogin = AuthService.getLoginFromToken(req);
@@ -172,6 +153,7 @@ public class PedidoService extends BaseService<Pedido> {
             UsuarioDAO userDAO = new UsuarioDAO();
             Usuario u = userDAO.getByLogin(donoLogin);
 
+            // Faz o cast para acessar métodos específicos do PedidoDAO
             PedidoDAO pedDao = (PedidoDAO) this.dao;
             List<Pedido> meusPedidos = pedDao.getPedidosByUsuario(u.getId());
 
@@ -183,27 +165,4 @@ public class PedidoService extends BaseService<Pedido> {
             return "{\"erro\": \"" + e.getMessage() + "\"}";
         }
     }
-    public Object atualizarStatus(Request req, Response res) {
-    try {
-        int id = Integer.parseInt(req.params(":id"));
-        // O status virá no corpo da requisição (ex: {"status": "ENVIADO"})
-        Pedido dadosNovos = gson.fromJson(req.body(), Pedido.class);
-        
-        PedidoDAO daoPedido = (PedidoDAO) this.dao;
-        Pedido pedidoExistente = daoPedido.get(id);
-
-        if (pedidoExistente != null) {
-            pedidoExistente.setStatus(dadosNovos.getStatus());
-            daoPedido.update(pedidoExistente); // O update do FileDAO grava no .db
-            res.status(200);
-            return "{\"mensagem\": \"Status atualizado com sucesso!\"}";
-        } else {
-            res.status(404);
-            return "{\"erro\": \"Pedido não encontrado.\"}";
-        }
-    } catch (Exception e) {
-        res.status(500);
-        return "{\"erro\": \"" + e.getMessage() + "\"}";
-    }
-}
 }

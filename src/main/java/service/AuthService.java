@@ -1,66 +1,67 @@
 package service;
 
-import java.security.Key;
-
-import com.google.gson.Gson;
-
 import dao.UsuarioDAO;
+import model.Role;
+import model.Usuario;
+import com.google.gson.Gson;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import model.Role;
-import model.Usuario;
 import spark.Request;
 import spark.Response;
+import java.security.Key;
 
+//Aqui tem uma parte mais de seguranca, faz a configuracao dos cookies chama o xor, login etc
 public class AuthService {
-
+    // Chave de assinatura (O segredo do servidor)
     private static Key key = Keys.secretKeyFor(io.jsonwebtoken.SignatureAlgorithm.HS256);
     private UsuarioDAO dao = new UsuarioDAO();
 
+    // login
     public Object login(Request req, Response res) {
-        // 1. Converte o JSON para objeto
         Usuario dto = new Gson().fromJson(req.body(), Usuario.class);
-
-        // 2. Busca no banco (usuarios.db)
         Usuario uBanco = dao.getByLogin(dto.getLogin());
 
-        // 3. A TRAVA DE SEGURANÇA (Obrigatório ser exatamente assim)
-        // Se o usuário não existe (null) OU a senha XOR não bate:
-        if (uBanco == null || !CriptoService.xor(dto.getSenha()).equals(uBanco.getSenha())) {
-            res.status(401);
-            // O halt avisa o Spark para retornar erro 401
-            spark.Spark.halt(401, "{\"erro\": \"Credenciais inválidas\"}");
-            // O return null garante que o Java PARE aqui e não execute o código debaixo
-            return null;
+        // Valida Senha (XOR com XOR se anulam)
+        if (uBanco != null && CriptoService.xor(dto.getSenha()).equals(uBanco.getSenha())) {
+            
+            // Cria Token
+            String token = Jwts.builder()
+                    .setSubject(uBanco.getLogin()) // Salva o login no "Subject"
+                    .claim("role", uBanco.getRole().name())
+                    .signWith(key).compact();
+
+            // Cookie HttpOnly
+            res.cookie("auth_token", token, 3600, false, true);
+            return "{\"msg\": \"Logado\", \"role\": \"" + uBanco.getRole() + "\"}";
         }
-
-        // 4. SUCESSO (Só chega aqui se o IF acima for falso)
-        String token = Jwts.builder()
-                .setSubject(uBanco.getLogin())
-                .claim("role", uBanco.getRole().name())
-                .signWith(key).compact();
-
-        res.cookie("/", "auth_token", token, 3600, false, true);
-        return "{\"msg\": \"Logado\", \"role\": \"" + uBanco.getRole() + "\"}";
+        res.status(401);
+        return "{\"erro\": \"Login invalido\"}";
     }
-
+    
+    // log out
     public Object logout(Request req, Response res) {
+        // A função removeCookie diz ao navegador para deletar o cookie 'auth_token'
         res.removeCookie("auth_token");
+        
+        // Alternativa manual (caso o navegador seja teimoso):
+        // res.cookie("auth_token", "", 0, false, true); 
+
         res.status(200);
-        return "{\"msg\": \"Deslogado\"}";
+        return "{\"msg\": \"Deslogado com sucesso\"}";
     }
 
+    // -- Pega o token no cookie do navegar e verifica a role/permissão do usuario --
     public static void verificarPermissao(Request req, Role... rolesPermitidos) {
         String token = req.cookie("auth_token");
-        if (token == null) {
-            spark.Spark.halt(401);
-        }
+        if (token == null) spark.Spark.halt(401, "{\"erro\": \"Nao autenticado\"}");
 
         try {
             Claims claims = Jwts.parserBuilder().setSigningKey(key).build()
                     .parseClaimsJws(token).getBody();
-            Role usuarioRole = Role.valueOf(claims.get("role", String.class));
+
+            String roleStr = claims.get("role", String.class);
+            Role usuarioRole = Role.valueOf(roleStr);
 
             boolean permitido = false;
             for (Role r : rolesPermitidos) {
@@ -69,19 +70,28 @@ public class AuthService {
                     break;
                 }
             }
-            if (!permitido) {
-                spark.Spark.halt(403);
-            }
-        } catch (Exception e) {
-            spark.Spark.halt(401);
+
+            if (!permitido) spark.Spark.halt(403, "{\"erro\": \"Acesso Negado para seu perfil\"}");
+
+        } catch (spark.HaltException e) {
+            throw e; 
+            
+        }catch (Exception e) {
+            spark.Spark.halt(401, "{\"erro\": \"Token invalido\"}");
         }
     }
 
+    // -- Verifica o login do token (é utilizado pra permitir alguns casos como o do proprio usuario ver e alterar o proprio perfil) --
     public static String getLoginFromToken(Request req) {
+        String token = req.cookie("auth_token");
+        if (token == null) return null;
+
         try {
-            String token = req.cookie("auth_token");
-            return Jwts.parserBuilder().setSigningKey(key).build()
-                    .parseClaimsJws(token).getBody().getSubject();
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key).build()
+                    .parseClaimsJws(token).getBody();
+            
+            return claims.getSubject();
         } catch (Exception e) {
             return null;
         }
