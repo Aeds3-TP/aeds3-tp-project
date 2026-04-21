@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meus Pedidos - MercadoFácil</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body>
+
+<div id="toastContainer" class="toast-container position-fixed bottom-0 end-0 p-3"></div>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="../index.html">
+      <i class="bi bi-shop"></i> MercadoFácil
+    </a>
+  </div>
+</nav>
+
+<!-- CONTEÚDO -->
+<div class="container my-5">
+  <h1 class="mb-4">
+    <i class="bi bi-bag-check"></i> Meus Pedidos
+  </h1>
+
+  <div id="ordersList">
+    <p class="text-muted">Carregando pedidos...</p>
+  </div>
+</div>
+
+<footer class="mt-5">
+  <div class="container text-center py-4">
+    <p>&copy; 2026 MercadoFácil</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/cart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  requireAuth();
+  carregarPedidos();
+});
+
+
+async function carregarPedidos() {
+  try {
+    console.log("Buscando pedidos...");
+
+    const pedidos = await apiGet('/api/comum/pedidos');
+
+    console.log("Pedidos recebidos:", pedidos);
+
+    renderPedidos(pedidos);
+
+  } catch (error) {
+    console.error("ERRO REAL:", error);
+
+    document.getElementById('ordersList').innerHTML = `
+      <div class="alert alert-danger">
+        Erro ao carregar pedidos: ${error.message}
+      </div>
+    `;
+  }
+}
+
+
+function renderPedidos(pedidos) {
+  const container = document.getElementById('ordersList');
+
+  if (!pedidos || pedidos.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-5">
+        <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+        <p class="text-muted mt-3">Nenhum pedido encontrado</p>
+        <a href="../index.html" class="btn btn-primary">Ir às compras</a>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = pedidos.map(p => {
+    const data = p.dataCompra
+      ? new Date(p.dataCompra).toLocaleString('pt-BR')
+      : 'Sem data';
+
+    return `
+      <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between">
+          <strong>Pedido #${p.id}</strong>
+          <span class="badge bg-secondary">${p.status || '---'}</span>
+        </div>
+
+        <div class="card-body">
+          <p><strong>Data:</strong> ${data}</p>
+          <p><strong>Total:</strong> ${formatPrice(p.valorTotal)}</p>
+        </div>
+
+        <div class="card-footer">
+          <button class="btn btn-sm btn-outline-primary" onclick="verDetalhes(${p.id})">
+            Ver itens
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function verDetalhes(idPedido) {
+  try {
+    // Busca os itens no Java
+    const itens = await apiGet(`/api/comum/pedidos/${idPedido}/itens`);
+
+    const listaContainer = document.getElementById('listaItensModal');
+    document.getElementById('modalTitulo').textContent = `Pedido #${idPedido}`;
+
+    if (!itens || itens.length === 0) {
+      listaContainer.innerHTML = '<li class="list-group-item text-danger text-center">Nenhum item encontrado para este pedido.</li>';
+    } else {
+      // Cria uma lista visualmente agradável
+      listaContainer.innerHTML = itens.map(i => `
+        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+          <div>
+            <span class="fw-bold d-block">Produto ID: ${i.idProduto}</span>
+            <small class="text-muted">ID Interno: #${i.idProduto}</small>
+          </div>
+          <span class="badge bg-primary rounded-pill">Qtd: ${i.quantidade}</span>
+        </li>
+      `).join('');
+    }
+
+    // Abre o Modal do Bootstrap
+    const modal = new bootstrap.Modal(document.getElementById('pedidoModal'));
+    modal.show();
+
+  } catch (error) {
+    console.error(error);
+    showToast("Erro ao carregar detalhes", "error");
+  }
+}
+</script>
+<div class="modal fade" id="pedidoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow">
+      <div class="modal-header bg-primary text-white rounded-top-4">
+        <h5 class="modal-title" id="modalTitulo">Detalhes do Pedido</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <ul class="list-group list-group-flush" id="listaItensModal">
+          </ul>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

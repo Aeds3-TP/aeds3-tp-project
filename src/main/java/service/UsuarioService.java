@@ -2,8 +2,6 @@ package service;
 
 import dao.UsuarioDAO;
 import model.Usuario;
-import model.Role;
-
 import spark.Request;
 import spark.Response;
 
@@ -18,16 +16,14 @@ public class UsuarioService extends BaseService<Usuario> {
         return Usuario.class;
     }
 
-    
     //--Funcoes do que é feito antes de aceitar o novo objeto--
     @Override
     protected void onBeforeInsert(Usuario u) throws Exception {
         // Validação do Model
         u.validar();
-        
+
         // Todo novo cadastro público SEMPRE será de um CLIENTE (ou USUARIO).
         //u.setRole(Role.USUARIO);
-
         // Validação do Service
         if (((UsuarioDAO) dao).getByLogin(u.getLogin()) != null) {
             throw new Exception("Este login já está em uso.");
@@ -38,12 +34,45 @@ public class UsuarioService extends BaseService<Usuario> {
     }
 
     @Override
+    public Object insert(Request req, Response res) {
+        try {
+            // Log 1: O que veio do Navegador?
+            System.out.println("JSON recebido no Java: " + req.body());
+
+            Usuario u = gson.fromJson(req.body(), Usuario.class);
+
+            // Log 2: O GSON conseguiu preencher o objeto?
+            System.out.println("Objeto após GSON: Nome=" + u.getNome() + ", Login=" + u.getLogin());
+
+            onBeforeInsert(u);
+
+            int id = ((UsuarioDAO) dao).insert(u);
+
+            // Log 3: O DAO retornou um ID válido?
+            System.out.println("ID gerado pelo DAO: " + id);
+
+            if (id > 0) {
+                res.status(201);
+                return "{\"msg\": \"Usuario criado\", \"id\": " + id + "}";
+            }
+            return "{\"erro\": \"Erro desconhecido no DAO\"}";
+
+        } catch (Exception e) {
+            // Log 4: Onde o código quebrou?
+            System.err.println("ERRO NO CADASTRO:");
+            e.printStackTrace();
+            res.status(400);
+            return "{\"erro\": \"" + e.getMessage() + "\"}";
+        }
+    }
+
+    @Override
     protected void onBeforeUpdate(Usuario u) throws Exception {
         boolean trocouSenha = u.getSenha() != null && !u.getSenha().trim().isEmpty();
-        
+
         if (!trocouSenha) {
             // "Bypass" provisório na senha só para passar na validação geral
-            u.setSenha("123"); 
+            u.setSenha("123");
         }
 
         // Valida o resto dos campos (Nome, Email, Login)
@@ -54,8 +83,7 @@ public class UsuarioService extends BaseService<Usuario> {
             u.setSenha(CriptoService.xor(u.getSenha()));
         }
     }
-    
-    
+
     //--Funcoes especificas para a tabela--
     public Object getPorLogin(Request req, Response res) {
         try {
@@ -64,7 +92,7 @@ public class UsuarioService extends BaseService<Usuario> {
             Usuario u = usuarioDAO.getByLogin(loginBuscado);
 
             if (u != null) {
-                u.setSenha(""); 
+                u.setSenha("");
                 res.status(200);
                 return gson.toJson(u);
             } else {
@@ -76,14 +104,13 @@ public class UsuarioService extends BaseService<Usuario> {
             return "{\"erro\": \"" + e.getMessage() + "\"}";
         }
     }
-    
-    
+
     //--funcoes que permitem o proprio usuario editar e ver seu proprio perfil--
     public Object getMe(Request req, Response res) {
         try {
             // Descobre quem está logado pelo Token (Crachá)
             String loginLogado = AuthService.getLoginFromToken(req);
-            
+
             if (loginLogado == null) {
                 res.status(401);
                 return "{\"erro\": \"Usuário não autenticado\"}";
@@ -112,7 +139,7 @@ public class UsuarioService extends BaseService<Usuario> {
         try {
             // Descobre quem é (Pelo Token)
             String loginLogado = AuthService.getLoginFromToken(req);
-            
+
             // Busca o original no banco
             UsuarioDAO usuarioDAO = (UsuarioDAO) dao;
             Usuario original = usuarioDAO.getByLogin(loginLogado);
@@ -129,7 +156,6 @@ public class UsuarioService extends BaseService<Usuario> {
             // Força o ID e o Cargo a serem os originais do banco
             atualizado.setId(original.getId());
             atualizado.setRole(original.getRole());
-       
 
             // Trata a senha (se vazia, mantém a velha; se nova, cifra)
             if (atualizado.getSenha() != null && !atualizado.getSenha().isEmpty()) {

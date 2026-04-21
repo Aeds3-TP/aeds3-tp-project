@@ -25,7 +25,7 @@ O projeto segue a arquitetura em camadas (MVC/DAO) para total separação de res
 * **service:** Regras de negócio, segurança (Criptografia de senhas com XOR) e controle de rotas REST.
 * **util:** Utilitários, como o motor de Ordenação Externa.
 * **Backend Web:** Spark Java (Porta 3000).
-* **Frontend:** HTML5, CSS3, JavaScript (Fetch API) localizado em `src/main/resources/public`.
+* **Frontend:** HTML5, CSS3, JavaScript (Fetch API) localizado em `src/main/mercado-simples-corrigido`.
 
 ## 📁 Estrutura de Diretórios de Dados (`/dados`)
 O sistema gerencia autonomamente seus arquivos de persistência nas seguintes pastas:
@@ -52,6 +52,16 @@ A porta de entrada do projeto é o arquivo principal **`Aplicacao.java`** locali
 4. Execute a classe (`Run Java`).
 
 ### Utilizando o Sistema
+Credenciais para administrador: 
+Login:admin@gmail.com
+Senha:123
+
+Credenciais para usuario comum:
+Login:teste@gmail.com
+Senha:123
+
+**Caso queira criar um outro administrador, utilize o console do backend.
+
 Ao rodar a aplicação, dois ambientes estarão disponíveis simultaneamente:
 
 **1. O Terminal Interativo (Backend CLI)**
