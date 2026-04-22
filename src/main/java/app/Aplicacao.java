@@ -31,7 +31,7 @@ public class Aplicacao {
         int entrada = -1;
         while (entrada != 0) {
             System.out.println("\n=================================");
-            System.out.println("Digite em qual tabela deseja alterar\n1 - Categoria\n2 - Favorito\n3 - Pedido\n4 - Produto\n5 - Usuario\n0 - Sair!");
+            System.out.println("Digite em qual tabela deseja alterar\n1 - Categoria\n2 - Favorito\n3 - Pedido\n4 - ItemPedido\n5 - Produto\n6 - Usuario\n0 - Sair!");
             System.out.println("=================================");
             entrada = sc.nextInt();
             sc.nextLine();
@@ -52,10 +52,11 @@ public class Aplicacao {
                             String descricao = sc.nextLine();
                             Categoria newCategoria = new Categoria(nome, descricao);
                             try {
+                                newCategoria.validar(); 
                                 int id = categoriaDAO.insert(newCategoria);
-                                System.out.println("Categoria de id: " + id + " adicionada!");
+                                System.out.println("Categoria de ID: " + id + " adicionada!");
                             } catch (Exception e) {
-                                System.out.println("Erro para adicionar categoria");
+                                System.out.println("Erro: " + e.getMessage());
                             }
                             break;
                         case 2:
@@ -70,12 +71,10 @@ public class Aplicacao {
                                 System.out.println("Digite a nova descricao:");
                                 atualizar.setDescricao(sc.nextLine());
                                 try {
-                                    if (categoriaDAO.update(atualizar)) {
-                                        System.out.println("Categoria Atualizada com sucesso!");
-                                    } else {
-                                        System.out.println("Erro para salvar a alteracao!");
-                                    }
-                                } catch (Exception e) { e.printStackTrace(); }
+                                    atualizar.validar(); 
+                                    if (categoriaDAO.update(atualizar)) System.out.println("Atualizada com sucesso!");
+                                    else System.out.println("Erro na atualização!");
+                                } catch (Exception e) { System.out.println("Erro: " + e.getMessage()); }
                             } else {
                                 System.out.println("Categoria nao encontrada!");
                             }
@@ -123,11 +122,10 @@ public class Aplicacao {
                             } else {
                                 Favorito newFavorito = new Favorito(idProduto, idUsuario);
                                 try {
-                                    int id = favoritoDAO.insert(newFavorito);
-                                    System.out.println("Favorito de ID: " + id + " adicionado com sucesso!");
-                                } catch (Exception e) {
-                                    System.out.println("Erro ao adicionar favorito.");
-                                }
+                                    newFavorito.validar(); 
+                                    favoritoDAO.insert(newFavorito);
+                                    System.out.println("Favoritado!");
+                                } catch (Exception e) { System.out.println("Erro: " + e.getMessage()); }
                             }
                             break;
                         case 2:
@@ -143,12 +141,10 @@ public class Aplicacao {
                                 atualizar.setIdUsuario(sc.nextInt());
                                 sc.nextLine();
                                 try {
-                                    if (favoritoDAO.update(atualizar)) {
-                                        System.out.println("Favorito Atualizado com sucesso!");
-                                    } else {
-                                        System.out.println("Erro para salvar a alteracao!");
-                                    }
-                                } catch (Exception e) { e.printStackTrace(); }
+                                    atualizar.validar(); 
+                                    favoritoDAO.update(atualizar);
+                                    System.out.println("Atualizado!");
+                                } catch (Exception e) { System.out.println("Erro: " + e.getMessage()); }
                             } else {
                                 System.out.println("Favorito nao encontrado!");
                             }
@@ -234,12 +230,10 @@ public class Aplicacao {
                                 atualizar.setValorTotal(sc.nextFloat());
                                 sc.nextLine();
                                 try {
-                                    if (pedidoDAO.update(atualizar)) {
-                                        System.out.println("Pedido Atualizado com sucesso!");
-                                    } else {
-                                        System.out.println("Erro para salvar a alteracao!");
-                                    }
-                                } catch (Exception e) { e.printStackTrace(); }
+                                    atualizar.validar();
+                                    pedidoDAO.update(atualizar);
+                                    System.out.println("Atualizado!");
+                                } catch (Exception e) { System.out.println("Erro: " + e.getMessage()); }
                             } else {
                                 System.out.println("Pedido nao encontrado!");
                             }
@@ -265,9 +259,89 @@ public class Aplicacao {
                             break;
                     }
                 }
-            } 
+            }
+            // ---------------- ITEM PEDIDO ----------------
+            else if(entrada == 4) {
+                ItemPedidoDAO itemPedidoDAO = new ItemPedidoDAO();
+                int entrada2 = -1;
+                while (entrada2 != 0) {
+                    System.out.println("\n-- Menu Item Pedidos --");
+                    System.out.println("1 - Adicionar\n2 - Atualizar\n3 - Remover\n4 - Mostrar\n0 - Sair");
+                    entrada2 = sc.nextInt();
+                    sc.nextLine();
+                    switch (entrada2) {
+                        case 1:
+                            System.out.println("Digite o id do pedido!");
+                            int idPedido = sc.nextInt();
+                            System.out.println("Digite o id do produto!");
+                            int idProduto = sc.nextInt();
+                            System.out.println("Digite a quantidade!");
+                            int quantidade = sc.nextInt();
+                            System.out.println("Digite o preco congelado (ex: 13,00)!");
+                            float precoCongelado = sc.nextFloat();
+                            sc.nextLine();
+                            ItemPedido newItemPedido = new ItemPedido(idPedido, idProduto, quantidade, precoCongelado);
+                            try {
+                                newItemPedido.validar();
+                                int id = itemPedidoDAO.insert(newItemPedido);
+                                System.out.println("Item pedido de ID: " + id + " gerado com sucesso!");
+                            } catch (Exception e) {
+                                System.out.println("Erro ao salvar item pedido: " + e.getMessage());
+                            }
+                            break;
+                        case 2:
+                            System.out.println("Digite o id do item pedido que deseja atualizar!");
+                            int UpdId = sc.nextInt();
+                            sc.nextLine();
+                            ItemPedido atualizar = itemPedidoDAO.get(UpdId);
+                            if (atualizar != null) {
+                                System.out.println("Dados atuais - id item pedido: " + atualizar.getId() + " | id pedido: " + atualizar.getIdPedido() + " | id produto: " + atualizar.getIdProduto() + " | quantidade: " + atualizar.getQuantidade()
+                                + " | preco congelado: " + atualizar.getPrecoCongelado());
+                                System.out.println("Digite o novo id do pedido:");
+                                atualizar.setIdPedido(sc.nextInt());
+                                System.out.println("Digite o novo id do produto:");
+                                atualizar.setIdProduto(sc.nextInt());
+                                System.out.println("Digite a nova quantidade:");
+                                atualizar.setQuantidade(sc.nextInt());
+                                System.out.println("Digite o novo preco congelado (ex: 13,00):");
+                                atualizar.setPrecoCongelado(sc.nextFloat());
+                                sc.nextLine();
+                                try {
+                                    atualizar.validar(); 
+                                    if (itemPedidoDAO.update(atualizar)) {
+                                        System.out.println("Item pedido Atualizado com sucesso!");
+                                    } else {
+                                        System.out.println("Erro para salvar a alteracao!");
+                                    }
+                                } catch (Exception e) { e.printStackTrace(); }
+                            } else {
+                                System.out.println("Item pedido nao encontrado!");
+                            }
+                            break;  
+                        case 3:
+                            System.out.println("Digite o id do item pedido que deseja remover!");
+                            int DelId = sc.nextInt();
+                            if (itemPedidoDAO.delete(DelId)) {
+                                System.out.println("Item pedido deletado com sucesso!");
+                            } else {
+                                System.out.println("Item pedido nao encontrado!");
+                            }
+                            break;
+                        case 4:
+                            List<ItemPedido> lista = itemPedidoDAO.getAll();
+                            if (lista.isEmpty()) {
+                                System.out.println("Nenhum pedido encontrado!");
+                            } else {
+                                for (ItemPedido u : lista) {
+                                    System.out.println("ID: " + u.getId() + " | IdPedido: " + u.getIdPedido() + " | IdProduto: " + u.getIdProduto() + " | Quantidade: " + u.getQuantidade() + " | Preco Congelado: " + u.getPrecoCongelado());
+                                }
+                            }
+                            break;
+                    }
+                }
+            }
             // ---------------- PRODUTO ----------------
-            else if (entrada == 4) {
+            else if (entrada == 5) {
                 ProdutoDAO produtoDAO = new ProdutoDAO();
                 int entrada2 = -1;
                 while (entrada2 != 0) {
@@ -358,7 +432,7 @@ public class Aplicacao {
                 }
             } 
             // ---------------- USUARIO ----------------
-            else if (entrada == 5) {
+            else if (entrada == 6) {
                 UsuarioDAO usuarioDAO = new UsuarioDAO();
                 int entrada2 = -1;
                 while (entrada2 != 0) {
@@ -379,11 +453,10 @@ public class Aplicacao {
                             String senhaCripto = CriptoService.xor(senha);
                             Usuario newUsuario = new Usuario(login, senhaCripto, nome, email, Role.USUARIO);
                             try {
+                                newUsuario.validar(); 
                                 int id = usuarioDAO.insert(newUsuario);
-                                System.out.println("Usuario de id: " + id + " adicionado!");
-                            } catch (Exception e) {
-                                System.out.println("Erro para adicionar usuario");
-                            }
+                                System.out.println("Usuário ID: " + id + " criado!");
+                            } catch (Exception e) { System.out.println("Erro: " + e.getMessage()); }
                             break;
                         case 2:
                             System.out.println("Digite o id do usuario que deseja atualizar!");
@@ -400,14 +473,10 @@ public class Aplicacao {
                                 String newSenha = sc.nextLine();
                                 atualizar.setSenha(CriptoService.xor(newSenha));
                                 try {
-                                    if (usuarioDAO.update(atualizar)) {
-                                        System.out.println("Usuario Atualizado com sucesso!");
-                                    } else {
-                                        System.out.println("Erro para salvar a alteracao!");
-                                    }
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
+                                    atualizar.validar(); 
+                                    usuarioDAO.update(atualizar);
+                                    System.out.println("Atualizado!");
+                                } catch (Exception e) { System.out.println("Erro: " + e.getMessage()); }
                             } else {
                                 System.out.println("Usuario nao encontrado!");
                             }
