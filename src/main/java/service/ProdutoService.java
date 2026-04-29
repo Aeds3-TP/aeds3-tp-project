@@ -1,7 +1,8 @@
 package service;
 
-import dao.CategoriaDAO;
-import dao.ProdutoDAO;
+import java.util.List;
+
+import dao.*;
 import model.Produto;
 import spark.Request;
 import spark.Response;
@@ -103,5 +104,20 @@ public class ProdutoService extends BaseService<Produto> {
             return this.dao.update(p);
         }
         return false;
+    }
+
+    // Retorna a listagem ordenada usando a Árvore B+ (Requisito C da prova)
+    public Object listarOrdenadosPorCategoria(spark.Request req, spark.Response res) {
+        try {
+            // CRIANDO A INSTÂNCIA DO DAO AQUI PARA O JAVA RECONHECÊ-LO:
+            ProdutoDAO produtoDAO = new ProdutoDAO();
+            
+            List<Produto> lista = produtoDAO.getProdutosOrdenadosPorCategoriaGeral();
+            res.status(200);
+            return gson.toJson(lista);
+        } catch (Exception e) {
+            res.status(500);
+            return gson.toJson("Erro ao buscar produtos ordenados por categoria: " + e.getMessage());
+        }
     }
 }
