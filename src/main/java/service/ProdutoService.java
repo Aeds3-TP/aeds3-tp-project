@@ -110,7 +110,7 @@ public class ProdutoService extends BaseService<Produto> {
     public Object listarOrdenadosPorCategoria(spark.Request req, spark.Response res) {
         try {
             // CRIANDO A INSTÂNCIA DO DAO AQUI PARA O JAVA RECONHECÊ-LO:
-            ProdutoDAO produtoDAO = new ProdutoDAO();
+        	ProdutoDAO produtoDAO = (ProdutoDAO) this.dao;
             
             List<Produto> lista = produtoDAO.getProdutosOrdenadosPorCategoriaGeral();
             res.status(200);
