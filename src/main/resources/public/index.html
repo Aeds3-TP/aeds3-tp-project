@@ -267,19 +267,17 @@
       }
     }
 
-    function renderProducts() {
-      const grid = document.getElementById('productsGrid');
-      
-      let filtered = allProducts.filter(p => {
-        const matchesName = p.nome.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesPrice = p.preco <= maxPrice;
-        return matchesName && matchesPrice;
-      });
+	function renderProducts() {
+	  const grid = document.getElementById('productsGrid');
+	  
+	  let filtered = allProducts.filter(p => {
+	    // Mantém só a busca por nome (o preço já foi filtrado no backend)
+	    const matchesName = p.nome.toLowerCase().includes(searchTerm.toLowerCase());
+	    return matchesName; 
+	  });
 
-      // Se a ordenação for Maior preço ou Nome, mantém ordenando no Front. 
-      // (O Menor Preço foi removido daqui pois o Backend já entregou ordenado).
-      if (sortBy === 'price_desc') filtered.sort((a, b) => b.preco - a.preco);
-      else if (sortBy === 'name') filtered.sort((a, b) => a.nome.localeCompare(b.nome));
+	  if (sortBy === 'price_desc') filtered.sort((a, b) => b.preco - a.preco);
+	  else if (sortBy === 'name') filtered.sort((a, b) => a.nome.localeCompare(b.nome));
 
       if (filtered.length === 0) {
         grid.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Nenhum produto encontrado</p></div>';
@@ -364,11 +362,15 @@
         renderProducts();
     });
 
-    document.getElementById('priceRange').addEventListener('input', (e) => {
-        maxPrice = e.target.value;
-        document.getElementById('priceValue').textContent = formatPrice(maxPrice);
-        renderProducts();
-    });
+	// Substitua o listener do priceRange por este:
+	document.getElementById('priceRange').addEventListener('change', async (e) => {
+	    maxPrice = e.target.value;
+	    document.getElementById('priceValue').textContent = formatPrice(maxPrice);
+	    
+	    // --- MUDANÇA AQUI: Bate na rota de preço do backend ---
+	    allProducts = await apiGet(`/produtos/preco/${maxPrice}`);
+	    renderProducts();
+	});
 
     // CÓDIGO CORRIGIDO AQUI:
     document.getElementById('sortSelect').addEventListener('change', (e) => {
