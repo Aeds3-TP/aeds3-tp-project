@@ -70,6 +70,7 @@ public class FavoritoService extends BaseService<Favorito> {
             return gson.toJson(favorito);
 
         } catch (Exception e) {
+        	e.printStackTrace(); // <--- ADICIONEM SÓ ESSA LINHA AQUI!
             res.status(400); // 400 = Bad Request (ex: já favoritou)
             return "{\"erro\": \"" + e.getMessage() + "\"}";
         }

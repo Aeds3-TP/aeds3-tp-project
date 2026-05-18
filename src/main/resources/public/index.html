@@ -89,6 +89,7 @@
             <option value="price_asc">Menor preço</option>
             <option value="price_desc">Maior preço</option>
             <option value="name">Nome (A-Z)</option>
+            <option value="category_tree">Categoria (Árvore B+)</option>
           </select>
         </div>
 
@@ -229,6 +230,25 @@
       } catch (error) { console.error(error); }
     }
 
+    async function buscarProdutosDaArvoreB() {
+      const grid = document.getElementById('productsGrid');
+      grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">A ler a Árvore B+ no servidor...</p></div>';
+      
+      try {
+        const produtosOrdenados = await apiGet('/produtos/relatorio/ordenados-categoria');
+        
+        allProducts = produtosOrdenados;
+        
+        renderProducts();
+        showToast('Sucesso! Lista ordenada no disco via Árvore B+.', 'success');
+        
+      } catch (error) {
+        console.error('Erro na Árvore B+:', error);
+        showToast('Erro ao buscar ordenação da Árvore B+.', 'error');
+        loadProducts();
+      }
+    }
+
     async function loadProducts() {
       try {
         let endpoint = '/produtos';
@@ -247,19 +267,17 @@
       }
     }
 
-    function renderProducts() {
-      const grid = document.getElementById('productsGrid');
-      
-      let filtered = allProducts.filter(p => {
-        const matchesName = p.nome.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesPrice = p.preco <= maxPrice;
-        return matchesName && matchesPrice;
-      });
+	function renderProducts() {
+	  const grid = document.getElementById('productsGrid');
+	  
+	  let filtered = allProducts.filter(p => {
+	    // Mantém só a busca por nome (o preço já foi filtrado no backend)
+	    const matchesName = p.nome.toLowerCase().includes(searchTerm.toLowerCase());
+	    return matchesName; 
+	  });
 
-      // Se a ordenação for Maior preço ou Nome, mantém ordenando no Front. 
-      // (O Menor Preço foi removido daqui pois o Backend já entregou ordenado).
-      if (sortBy === 'price_desc') filtered.sort((a, b) => b.preco - a.preco);
-      else if (sortBy === 'name') filtered.sort((a, b) => a.nome.localeCompare(b.nome));
+	  if (sortBy === 'price_desc') filtered.sort((a, b) => b.preco - a.preco);
+	  else if (sortBy === 'name') filtered.sort((a, b) => a.nome.localeCompare(b.nome));
 
       if (filtered.length === 0) {
         grid.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">Nenhum produto encontrado</p></div>';
@@ -339,29 +357,41 @@
     }
 
     function setupEventListeners() {
-      document.getElementById('searchInput').addEventListener('input', (e) => {
+    document.getElementById('searchInput').addEventListener('input', (e) => {
         searchTerm = e.target.value;
         renderProducts();
-      });
+    });
 
-      document.getElementById('priceRange').addEventListener('input', (e) => {
-        maxPrice = e.target.value;
-        document.getElementById('priceValue').textContent = formatPrice(maxPrice);
-        renderProducts();
-      });
+	// Substitua o listener do priceRange por este:
+	document.getElementById('priceRange').addEventListener('change', async (e) => {
+	    maxPrice = e.target.value;
+	    document.getElementById('priceValue').textContent = formatPrice(maxPrice);
+	    
+	    // --- MUDANÇA AQUI: Bate na rota de preço do backend ---
+	    allProducts = await apiGet(`/produtos/preco/${maxPrice}`);
+	    renderProducts();
+	});
 
-      document.getElementById('sortSelect').addEventListener('change', (e) => {
+    // CÓDIGO CORRIGIDO AQUI:
+    document.getElementById('sortSelect').addEventListener('change', (e) => {
         sortBy = e.target.value;
         
-        // Se a pessoa selecionou Menor Preço, temos que ir no Back-end rodar a Ordenação Externa.
-        if (sortBy === 'price_asc') {
+        // 1. Se escolheu a Árvore B+
+        if (sortBy === 'category_tree') {
+            buscarProdutosDaArvoreB(); 
+        } 
+        // 2. Se escolheu Menor Preço (Ordenação Externa)
+        else if (sortBy === 'price_asc') {
             document.getElementById('productsGrid').innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-warning" role="status"></div><p class="mt-2 text-muted">Ordenando no disco do servidor...</p></div>';
             loadProducts(); 
-        } else {
-            renderProducts(); 
+        } 
+        // 3. Qualquer outra opção (Nome, Maior Preço, Recentes)
+        else {
+            // Recarrega do banco normal para limpar a ordem da árvore
+            loadProducts(); 
         }
-      });
-    }
+    });
+}
 
     function goToCheckout() {
       if (cart.items.length === 0) {

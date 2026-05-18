@@ -74,42 +74,63 @@
       await loadFavorites();
     });
 
-    async function loadFavorites() {
-      const grid = document.getElementById('favoritesGrid');
-      try {
-        // Busca a lista de favoritos (IDs)
-        // O apiGet do seu utils.js DEVE ter o credentials: 'include'
-        const favs = await apiGet('/api/comum/favoritos');
-        
-        if (!favs || favs.length === 0) {
-          grid.innerHTML = `
-            <div class="col-12 text-center py-5">
-              <i class="bi bi-heartbreak text-muted" style="font-size: 5rem;"></i>
-              <p class="fs-4 text-muted mt-3">Você ainda não tem favoritos.</p>
-              <a href="../index.html" class="btn btn-gold-outline rounded-pill px-4 mt-2">Encontrar Produtos</a>
-            </div>`;
-          return;
-        }
+	async function loadFavorites() {
+	  const grid = document.getElementById('favoritesGrid');
+	  try {
+	    // 1. Busca a lista de favoritos (IDs) no Java
+	    const favs = await apiGet('/api/comum/favoritos');
+	    
+	    if (!favs || favs.length === 0) {
+	      grid.innerHTML = `
+	        <div class="col-12 text-center py-5">
+	          <i class="bi bi-heartbreak text-muted" style="font-size: 5rem;"></i>
+	          <p class="fs-4 text-muted mt-3">Você ainda não tem favoritos.</p>
+	          <a href="../index.html" class="btn btn-gold-outline rounded-pill px-4 mt-2">Encontrar Produtos</a>
+	        </div>`;
+	      return;
+	    }
 
-        // Busca todos os produtos para exibir os detalhes (Nome, Preço, Foto)
-        const allProducts = await apiGet('/produtos');
-        
-        // Filtra para mostrar apenas o que o usuário favoritou
-        const favIds = favs.map(f => f.idProduto);
-        favoriteProducts = allProducts.filter(p => favIds.includes(p.id));
+	    const favIds = favs.map(f => f.idProduto);
+	    
+	    // 2. Proteção contra 404: Captura erros de forma individual para cada produto
+	    const promessasProdutos = favIds.map(async (id) => {
+	      try {
+	        return await apiGet(`/produtos/${id}`);
+	      } catch (e) {
+	        // Se um produto antigo ou inválido der 404, apenas avisa o console e retorna null
+	        console.warn(`Produto de ID ${id} não foi encontrado no banco de dados.`);
+	        return null; 
+	      }
+	    });
 
-        renderFavorites();
-      } catch (error) {
-        console.error("Erro na página de favoritos:", error);
-        grid.innerHTML = `
-          <div class="col-12 text-center py-5 bg-white rounded-4 shadow-sm">
-            <i class="bi bi-shield-lock text-danger" style="font-size: 3rem;"></i>
-            <h4 class="mt-3">Sessão Expirada ou Erro de Conexão</h4>
-            <p class="text-muted">Por favor, faça login novamente para ver seus favoritos.</p>
-            <a href="login.html" class="btn btn-primary rounded-pill px-4">Ir para Login</a>
-          </div>`;
-      }
-    }
+	    // 3. Aguarda o retorno de todas as requisições
+	    const resultados = await Promise.all(promessasProdutos);
+	    
+	    // 4. Filtra a lista para remover os produtos que deram erro (null)
+	    favoriteProducts = resultados.filter(p => p !== null);
+
+	    // Se mesmo tendo favoritos salvos, todos eles eram inválidos/antigos
+	    if (favoriteProducts.length === 0) {
+	      grid.innerHTML = `
+	        <div class="col-12 text-center py-5">
+	          <i class="bi bi-heartbreak text-muted" style="font-size: 5rem;"></i>
+	          <p class="fs-4 text-muted mt-3">Nenhum dos seus produtos favoritos está disponível.</p>
+	        </div>`;
+	      return;
+	    }
+
+	    renderFavorites();
+	  } catch (error) {
+	    console.error("Erro na página de favoritos:", error);
+	    grid.innerHTML = `
+	      <div class="col-12 text-center py-5 bg-white rounded-4 shadow-sm">
+	        <i class="bi bi-shield-lock text-danger" style="font-size: 3rem;"></i>
+	        <h4 class="mt-3">Erro de Conexão ou Sessão Expirada</h4>
+	        <p class="text-muted">Por favor, tente recarregar a página ou faça login novamente.</p>
+	        <a href="login.html" class="btn btn-primary rounded-pill px-4">Ir para Login</a>
+	      </div>`;
+	  }
+	}
 
     function renderFavorites() {
       const grid = document.getElementById('favoritesGrid');
