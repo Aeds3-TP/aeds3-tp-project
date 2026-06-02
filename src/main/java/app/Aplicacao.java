@@ -544,6 +544,7 @@ public class Aplicacao {
         FavoritoService favoritoService = new FavoritoService();
         ItemPedidoService itemPedidoService = new ItemPedidoService();
         PedidoService pedidoService = new PedidoService();
+        service.BackupService backupService = new service.BackupService();
 
         // --- ROTAS PÚBLICAS (NÃO EXIGEM LOGIN) ---
         post("/login", (req, res) -> new AuthService().login(req, res));
@@ -605,6 +606,18 @@ public class Aplicacao {
                 get("/itens-pedido", (req, res) -> itemPedidoService.getAll(req, res));
                 get("/itens-pedido/:id", (req, res) -> itemPedidoService.get(req, res));
                 delete("/itens-pedido/:id", (req, res) -> itemPedidoService.delete(req, res));
+                
+                // Rotas de Geração de Backup (Compactar)
+                post("/backup/huffman", (req, res) -> backupService.criarBackupHuffman(req, res));
+                post("/backup/lzw", (req, res) -> backupService.criarBackupLZW(req, res));
+                
+                // Rotas de Restauração de Backup (Descompactar)
+                post("/backup/huffman/restaurar", (req, res) -> backupService.restaurarBackupHuffman(req, res));
+                post("/backup/lzw/restaurar", (req, res) -> backupService.restaurarBackupLZW(req, res));
+                
+                // Rotas de Auditoria de Dados
+                post("/backup/huffman/auditoria", (req, res) -> backupService.auditoriaHuffman(req, res));
+                post("/backup/lzw/auditoria", (req, res) -> backupService.auditoriaLZW(req, res));
             });
 
             // Rotas Comuns
