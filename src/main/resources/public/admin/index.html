@@ -66,6 +66,48 @@
               </div>
             </div>
           </div>
+
+          <div class="row g-3 mt-3">
+            <div class="col-12">
+              <div class="card shadow-sm p-4 bg-white rounded">
+                <h5 class="card-title mb-3"><i class="bi bi-archive-fill text-primary"></i> Gerenciamento de Backups e Compressão</h5>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <div class="border rounded p-3 bg-light h-100">
+                      <h6 class="fw-bold d-flex align-items-center gap-2">
+                        <i class="bi bi-file-earmark-zip text-warning fs-5"></i> Método 1: Algoritmo de Huffman
+                      </h6>
+                      <p class="small text-muted mb-3">Comprime de forma estática analisando a frequência de repetição de bytes das tabelas e índices binários em disco.</p>
+                      <div class="d-flex gap-2">
+                        <button class="btn btn-primary w-100" onclick="executarBackup('huffman')">
+                          <i class="bi bi-cloud-arrow-up"></i> Compactar
+                        </button>
+                        <button class="btn btn-outline-danger w-100" onclick="executarRestauracao('huffman')">
+                          <i class="bi bi-arrow-counterclockwise"></i> Restaurar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="border rounded p-3 bg-light h-100">
+                      <h6 class="fw-bold d-flex align-items-center gap-2">
+                        <i class="bi bi-file-earmark-zip text-success fs-5"></i> Método 2: Algoritmo LZW
+                      </h6>
+                      <p class="small text-muted mb-3">Substitui sequências repetitivas por códigos numéricos indexados em um dicionário dinâmico de 12 bits.</p>
+                      <div class="d-flex gap-2">
+                        <button class="btn btn-success w-100" onclick="executarBackup('lzw')">
+                          <i class="bi bi-cloud-arrow-up"></i> Compactar
+                        </button>
+                        <button class="btn btn-outline-danger w-100" onclick="executarRestauracao('lzw')">
+                          <i class="bi bi-arrow-counterclockwise"></i> Restaurar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div id="products" class="tab-content" style="display: none;">
@@ -206,6 +248,48 @@
       } catch (e) { console.error(e); }
     }
 
+    // =========================================================
+    // FUNÇÕES DE COMPRESSÃO E RESTAURAÇÃO (FASE IV)
+    // =========================================================
+    async function executarBackup(algoritmo) {
+      const confirmado = confirm(`Confirma a criação de um backup total comprimido usando o método ${algoritmo.toUpperCase()}? Isso irá consolidar os dados e índices.`);
+      if (!confirmado) return;
+
+      try {
+        showToast(`Gerando snapshot via ${algoritmo.toUpperCase()}...`);
+        const dados = await apiPost(`/api/admin/backup/${algoritmo}`, {});
+        
+        if (dados && dados.original !== undefined) {
+          const taxa = (1 - (dados.comprimido / dados.original)) * 100;
+          alert(`📦 Backup físico concluído!\n\n` +
+                `• Tamanho Original (Dados + Índices): ${dados.original} bytes\n` +
+                `• Tamanho do Pacote Compactado: ${dados.comprimido} bytes\n` +
+                `• Eficiência do Algoritmo: ${taxa.toFixed(2)}%`);
+        } else {
+          showToast('Backup gerado com sucesso!');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast(`Falha na compactação: ${err.message}`, 'error');
+      }
+    }
+
+    async function executarRestauracao(algoritmo) {
+      const confirmado = confirm(`⚠️ ALERTA CRÍTICO! A restauração do backup ${algoritmo.toUpperCase()} vai substituir TODOS os registros e estruturas de árvores/hashes atuais do sistema.\n\nEsta operação é definitiva. Confirma a restauração?`);
+      if (!confirmado) return;
+
+      try {
+        showToast('Decodificando e substituindo arquivos lógicos...');
+        const resposta = await apiPost(`/api/admin/backup/${algoritmo}/restaurar`, {});
+        
+        alert(resposta.msg || `✅ Sistema e tabelas restauradas com sucesso a partir do arquivo ${algoritmo}!`);
+        loadDashboard();
+      } catch (err) {
+        console.error(err);
+        showToast(`Erro na extração: ${err.message}`, 'error');
+      }
+    }
+
     async function loadProducts() {
       const p = await apiGet('/produtos');
       document.getElementById('productsTable').innerHTML = p.map(i => {
@@ -226,7 +310,6 @@
       }).join('');
     }
 
-    // Funções para chamar o Java
     async function restoreProduct(id) {
       if (confirm('Restaurar este produto?')) {
         await apiPost(`/api/gestao/produtos/${id}/restaurar`, {});
@@ -274,19 +357,16 @@
       </td>
     </tr>`).join('');
     }
+
     async function updateOrderStatus(idPedido, novoStatus) {
       try {
-        // Faz a chamada para a rota de gestão que você criou no Aplicacao.java
         await apiPut(`/api/gestao/pedidos/${idPedido}/status`, { status: novoStatus });
-
-        showToast('Status atualizado com sucesso!');
-
-        // Chama a função que já existe no seu index para recarregar a tabela
+        showToast('Status updated!');
         loadOrders();
       } catch (err) {
         console.error(err);
         showToast('Erro ao atualizar status', 'error');
-        loadOrders(); // Recarrega para resetar o select visualmente
+        loadOrders();
       }
     }
 
