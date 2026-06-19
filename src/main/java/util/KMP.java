@@ -1,4 +1,4 @@
-package utilidades;
+package util;
 
 import java.util.*;
 import model.Produto;

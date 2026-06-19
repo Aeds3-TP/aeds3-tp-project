@@ -9,8 +9,8 @@ import dao.ProdutoDAO;
 import model.Produto;
 import spark.Request;
 import spark.Response;
-import utilidades.BoyerMoore;
-import utilidades.KMP;
+import util.BoyerMoore;
+import util.KMP;
 
 public class PesquisaService {
 
