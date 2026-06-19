@@ -1,18 +1,16 @@
 package utilidades;
 
 import java.util.*;
-import model.*;
+import model.Produto;
 
 public class KMP {
     private static int[] computarLPS(String padrao) {
-        // Função que calcula o sufixo e o prefixo mais longo
         int m = padrao.length();
         int[] lps = new int[m];
-        
-        int len = 0;
+
+        int len = 0; 
         int i = 1;
-        
-        lps[0] = 0;
+        lps[0] = 0; 
 
         while (i < m) {
             if (padrao.charAt(i) == padrao.charAt(len)) {
@@ -38,22 +36,21 @@ public class KMP {
         int n = texto.length();
         int m = padrao.length();
 
-        // Pré-processa o padrão para construir a tabela LPS
         int[] lps = computarLPS(padrao);
 
-        int i = 0; // índice do texto
-        int j = 0; // índice do padrão
+        int i = 0; 
+        int j = 0; 
 
         while (i < n) {
             if (padrao.charAt(j) == texto.charAt(i)) {
-                j++;
                 i++;
+                j++;
             }
             if (j == m) {
                 return true;
             } else if (i < n && padrao.charAt(j) != texto.charAt(i)) {
                 if (j != 0) {
-                    j = lps[j - 1];
+                    j = lps[j - 1]; 
                 } else {
                     i++;
                 }
@@ -62,20 +59,17 @@ public class KMP {
         return false;
     }
 
-    //Pesquisa sem case
     public static boolean pesquisarIgnoreCase(String texto, String padrao) {
         if (texto == null || padrao == null) return false;
         return pesquisar(texto.toLowerCase(), padrao.toLowerCase());
     }
-
-
-    public ArrayList<Receita> pesquisar(ArrayList<Receita> texto, String padrao){
-        ArrayList<Receita> compativeis = new ArrayList<>();
-        for(Receita palavra: texto){
-            if(pesquisarIgnoreCase(palavra.getDescricao(), padrao)){
-                compativeis.add(palavra);
+    public static List<Produto> pesquisarEmProdutos(List<Produto> produtos, String padrao) {
+        List<Produto> encontrados = new ArrayList<>();
+        for (Produto p : produtos) {
+            if (pesquisarIgnoreCase(p.getNome(), padrao)) {
+                encontrados.add(p);
             }
         }
-        return compativeis;
+        return encontrados;
     }
 }

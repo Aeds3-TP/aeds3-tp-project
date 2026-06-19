@@ -7,11 +7,13 @@ import dao.*;
 import model.*;
 
 import service.AuthService;
+import service.BackupService;
 import service.CategoriaService;
 import service.CriptoService;
 import service.FavoritoService;
 import service.ItemPedidoService;
 import service.PedidoService;
+import service.PesquisaService;
 import service.ProdutoService;
 import service.UsuarioService;
 import static spark.Spark.before;
@@ -545,6 +547,7 @@ public class Aplicacao {
         ItemPedidoService itemPedidoService = new ItemPedidoService();
         PedidoService pedidoService = new PedidoService();
         service.BackupService backupService = new service.BackupService();
+        PesquisaService pesquisaService = new PesquisaService();
 
         // --- ROTAS PÚBLICAS (NÃO EXIGEM LOGIN) ---
         post("/login", (req, res) -> new AuthService().login(req, res));
@@ -561,6 +564,8 @@ public class Aplicacao {
         get("/categorias", (req, res) -> categoriaService.getAll(req, res));
         get("/categorias/:id", (req, res) -> categoriaService.get(req, res));
         get("/categorias/busca/:nome", (req, res) -> categoriaService.getPorNome(req, res));
+
+        get("/pesquisa/produtos", (req, res) -> pesquisaService.pesquisarProdutos(req, res));
 
         before("/api/admin/*", (req, res) -> {
             if (req.requestMethod().equals("OPTIONS")) {
