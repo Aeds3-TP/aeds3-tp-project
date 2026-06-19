@@ -12,32 +12,11 @@ import spark.Response;
 import utilidades.BoyerMoore;
 import utilidades.KMP;
 
-/**
- * Serviço responsável pelas funcionalidades de:
- *  1. Pesquisa por padrão (KMP e Boyer-Moore) sobre o campo 'nome' de Produto.
- *  2. Criptografia/decriptografia XOR aplicada a campos sensíveis.
- *
- * Rotas expostas:
- *  GET  /api/pesquisa/produtos?padrao=&algoritmo=KMP|BM   → busca produtos pelo nome
- *  POST /api/pesquisa/cripto/cifrar                        → cifra um texto com XOR
- *  POST /api/pesquisa/cripto/decifrar                      → decifra um texto com XOR
- */
 public class PesquisaService {
 
     private final ProdutoDAO produtoDAO = new ProdutoDAO();
     private final Gson gson = new Gson();
 
-    // -----------------------------------------------------------------------
-    // PESQUISA POR PADRÃO
-    // -----------------------------------------------------------------------
-
-    /**
-     * Endpoint: GET /api/pesquisa/produtos?padrao=texto&algoritmo=KMP
-     *
-     * O campo textual escolhido é 'nome' do Produto porque é o campo de
-     * busca mais utilizado pelos clientes e contém texto livre, sendo ideal
-     * para demonstrar casamento de padrões.
-     */
     public Object pesquisarProdutos(Request req, Response res) {
         try {
             String padrao    = req.queryParams("padrao");
@@ -82,55 +61,6 @@ public class PesquisaService {
             resposta.addProperty("totalEncontrados", resultado.size());
             resposta.addProperty("tempoMs", tempoMs);
             resposta.add("registros", gson.toJsonTree(resultado));
-
-            res.status(200);
-            return gson.toJson(resposta);
-
-        } catch (Exception e) {
-            res.status(500);
-            return "{\"erro\": \"" + e.getMessage() + "\"}";
-        }
-    }
-
-    // -----------------------------------------------------------------------
-    // CRIPTOGRAFIA XOR
-    // Campo sensível: 'senha' do Usuario — campo com dados privados do usuário.
-    // A mesma função XOR serve para cifrar e decifrar (operação simétrica).
-    // -----------------------------------------------------------------------
-
-    /**
-     * POST /api/pesquisa/cripto/cifrar
-     * Body JSON: { "texto": "valorOriginal" }
-     * Retorna:   { "resultado": "valorCifrado", "metodo": "XOR" }
-     */
-    public Object cifrar(Request req, Response res) {
-        return aplicarXor(req, res, "cifrado");
-    }
-
-    /**
-     * POST /api/pesquisa/cripto/decifrar
-     * Body JSON: { "texto": "valorCifrado" }
-     * Retorna:   { "resultado": "valorOriginal", "metodo": "XOR" }
-     */
-    public Object decifrar(Request req, Response res) {
-        return aplicarXor(req, res, "decifrado");
-    }
-
-    private Object aplicarXor(Request req, Response res, String operacao) {
-        try {
-            JsonObject body = gson.fromJson(req.body(), JsonObject.class);
-            if (body == null || !body.has("texto")) {
-                res.status(400);
-                return "{\"erro\": \"Campo 'texto' obrigatório no body.\"}";
-            }
-            String texto = body.get("texto").getAsString();
-            String resultado = CriptoService.xor(texto);
-
-            JsonObject resposta = new JsonObject();
-            resposta.addProperty("operacao", operacao);
-            resposta.addProperty("metodo", "XOR");
-            resposta.addProperty("campoCifrado", "senha");
-            resposta.addProperty("resultado", resultado);
 
             res.status(200);
             return gson.toJson(resposta);
