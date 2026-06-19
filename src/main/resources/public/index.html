@@ -19,8 +19,20 @@
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
-          <li class="nav-item">
-            <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Buscar produtos..." style="width: 200px;">
+          <li class="nav-item d-flex align-items-center gap-2">
+            <div class="input-group input-group-sm" style="width: 340px;">
+              <input type="text" class="form-control" id="searchInput" placeholder="Buscar produtos...">
+              <select class="form-select" id="algoritmoSelect" style="max-width: 90px;">
+                <option value="KMP">KMP</option>
+                <option value="BM">Boyer-Moore</option>
+              </select>
+              <button class="btn btn-warning btn-sm" id="btnBuscar" title="Buscar">
+                <i class="bi bi-search"></i>
+              </button>
+              <button class="btn btn-outline-light btn-sm" id="btnLimpar" title="Limpar busca" style="display:none;">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
           </li>
           <li class="nav-item ms-3">
             <a class="nav-link" href="pages/favorites.html">
@@ -60,6 +72,7 @@
       <h1>Bem-vindo ao MercadoFácil</h1>
       <p>Produtos selecionados com qualidade e sofisticação para o seu dia a dia</p>
     </div>
+    <div id="searchInfo" class="mt-3 text-center text-muted small" style="display:none;"></div>
   </div>
 
   <div class="container my-5">
@@ -271,8 +284,7 @@
 	  const grid = document.getElementById('productsGrid');
 	  
 	  let filtered = allProducts.filter(p => {
-	    // Mantém só a busca por nome (o preço já foi filtrado no backend)
-	    const matchesName = p.nome.toLowerCase().includes(searchTerm.toLowerCase());
+	    const matchesName = searchTerm === '' || p.nome.toLowerCase().includes(searchTerm.toLowerCase());
 	    return matchesName; 
 	  });
 
@@ -357,9 +369,67 @@
     }
 
     function setupEventListeners() {
-    document.getElementById('searchInput').addEventListener('input', (e) => {
-        searchTerm = e.target.value;
+    let searchDebounce = null;
+    async function executarBusca() {
+      const padrao = document.getElementById('searchInput').value.trim();
+      const algoritmo = document.getElementById('algoritmoSelect').value;
+      const btnLimpar = document.getElementById('btnLimpar');
+      const grid = document.getElementById('productsGrid');
+
+      if (!padrao) {
+        btnLimpar.style.display = 'none';
+        searchTerm = '';
+        loadProducts();
+        return;
+      }
+
+      btnLimpar.style.display = '';
+      grid.innerHTML = `<div class="col-12 text-center py-5">
+        <div class="spinner-border text-warning" role="status"></div>
+        <p class="mt-2 text-muted">Pesquisando com ${algoritmo}...</p>
+      </div>`;
+
+      try {
+        const resultado = await fetch(`/pesquisa/produtos?padrao=${encodeURIComponent(padrao)}&algoritmo=${algoritmo}`)
+          .then(r => r.json());
+
+        allProducts = resultado.registros || [];
+        searchTerm = ''; // já filtrado pelo backend, não filtra de novo
         renderProducts();
+
+        // Badge informando qual algoritmo foi usado
+        const info = document.getElementById('searchInfo');
+        if (info) {
+          info.textContent = `${resultado.totalEncontrados} resultado(s) com ${resultado.algoritmo} em ${resultado.tempoMs}ms`;
+          info.style.display = '';
+        }
+      } catch (e) {
+        showToast('Erro na pesquisa', 'error');
+      }
+    }
+
+    document.getElementById('btnBuscar').addEventListener('click', executarBusca);
+
+    document.getElementById('searchInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') executarBusca();
+    });
+
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      // Se apagou tudo, limpa automaticamente
+      if (!e.target.value.trim()) {
+        document.getElementById('btnLimpar').style.display = 'none';
+        searchTerm = '';
+        loadProducts();
+      }
+    });
+
+    document.getElementById('btnLimpar').addEventListener('click', () => {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('btnLimpar').style.display = 'none';
+      const info = document.getElementById('searchInfo');
+      if (info) info.style.display = 'none';
+      searchTerm = '';
+      loadProducts();
     });
 
 	// Substitua o listener do priceRange por este:
